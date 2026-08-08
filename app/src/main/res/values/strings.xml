@@ -14,6 +14,10 @@
     <string name="bf_region">Egress Region</string>
     <string name="bf_region_sum">Two-letter Psiphon region code (e.g. sg, jp, us). Leave empty for automatic.</string>
     <string name="bf_inject_type">Injection Method</string>
+    <string name="bf_whitelist">Whitelist (CONNECT host:port)</string>
+    <string name="bf_whitelist_sum">Which fronted CONNECT target to intercept, e.g. akamai.net:80. Requires Injection Method = Payload / SNI rewrite.</string>
+    <string name="bf_front">Bug Host / IP</string>
+    <string name="bf_front_sum">The real host or IP to dial instead (the carrier "bug"), e.g. 125.235.36.177. Comma-separate several to rotate.</string>
     <string name="bf_cores">Tunnel Count</string>
     <string name="bf_cores_sum">Number of parallel Psiphon tunnels (default 2).</string>
     <string name="bf_protocols">Tunnel Protocols</string>

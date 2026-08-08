@@ -24,7 +24,9 @@ public class Constants
             INTENT_BF_REGION = INTENT_PREFIX + "BFREGION",
             INTENT_BF_CORES = INTENT_PREFIX + "BFCORES",
             INTENT_BF_INJECT_TYPE = INTENT_PREFIX + "BFINJECT",
-            INTENT_BF_PROTOCOLS = INTENT_PREFIX + "BFPROTO";
+            INTENT_BF_PROTOCOLS = INTENT_PREFIX + "BFPROTO",
+            INTENT_BF_WHITELIST = INTENT_PREFIX + "BFWL",
+            INTENT_BF_FRONT = INTENT_PREFIX + "BFFRONT";
 
     public static final String PREF = "profile",
             PREF_PROFILE = "profile",
@@ -49,5 +51,7 @@ public class Constants
             PREF_BF_REGION = "bf_region",
             PREF_BF_CORES = "bf_cores",
             PREF_BF_INJECT_TYPE = "bf_inject_type",
-            PREF_BF_PROTOCOLS = "bf_protocols";
+            PREF_BF_PROTOCOLS = "bf_protocols",
+            PREF_BF_WHITELIST = "bf_whitelist",
+            PREF_BF_FRONT = "bf_front";
 }

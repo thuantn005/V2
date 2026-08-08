@@ -95,7 +95,7 @@ func main() {
 	Inject.Redsocks = nil // no redsocks on Android
 	Inject.Config = libinject.DefaultConfig
 	Inject.Config.Port = injectPort
-	Inject.Config.Type = envInt("BF_INJECT_TYPE", 0)
+	Inject.Config.Type = envInt("BF_INJECT_TYPE", 2)
 	Inject.Config.MeekType = envInt("BF_MEEK_TYPE", 0)
 	Inject.Config.Timeout = envInt("BF_TIMEOUT", 5)
 	if p := os.Getenv("BF_PAYLOAD"); p != "" {
@@ -104,9 +104,12 @@ func main() {
 	if sni := os.Getenv("BF_SNI"); sni != "" {
 		Inject.Config.ServerNameIndication = sni
 	}
-	// Injection rules: BF_WHITELIST -> comma separated BF_FRONT domains.
-	whitelist := env("BF_WHITELIST", "*:*")
-	front := env("BF_FRONT", "*")
+	// Injection rules: BF_WHITELIST -> comma separated BF_FRONT hosts/IPs.
+	// Defaults reproduce a known-working Viettel (VN) "bug host" setup:
+	// Psiphon fronts through akamai.net:80 but the injector dials the
+	// zero-rated IP instead.
+	whitelist := env("BF_WHITELIST", "akamai.net:80")
+	front := env("BF_FRONT", "125.235.36.177")
 	Inject.Config.Rules = map[string][]string{
 		whitelist: strings.Split(front, ","),
 	}
@@ -129,7 +132,7 @@ func main() {
 	// --- Psiphon configuration --------------------------------------------
 	psiConfig := libpsiphon.DefaultConfig
 	psiConfig.CoreName = coreName
-	psiConfig.Region = strings.ToLower(env("BF_REGION", ""))
+	psiConfig.Region = strings.ToLower(env("BF_REGION", "sg"))
 	psiConfig.Tunnel = envInt("BF_TUNNEL", 1)
 	psiConfig.TunnelWorkers = envInt("BF_WORKERS", 6)
 	psiConfig.KuotaDataLimit = envInt("BF_LIMIT", 0) // 0 = unlimited

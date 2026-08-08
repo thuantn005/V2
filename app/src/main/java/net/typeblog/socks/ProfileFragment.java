@@ -78,7 +78,8 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
     private ListPreference mPrefProfile, mPrefRoutes, mPrefBfInjectType;
     private EditTextPreference mPrefServer, mPrefPort, mPrefUsername, mPrefPassword,
             mPrefDns, mPrefDnsPort, mPrefAppList, mPrefUDPGW,
-            mPrefBfPayload, mPrefBfSni, mPrefBfRegion, mPrefBfCores, mPrefBfProtocols;
+            mPrefBfPayload, mPrefBfSni, mPrefBfRegion, mPrefBfCores, mPrefBfProtocols,
+            mPrefBfWhitelist, mPrefBfFront;
     private CheckBoxPreference mPrefUserpw, mPrefPerApp, mPrefAppBypass, mPrefIPv6, mPrefUDP, mPrefAuto;
 
     @Override
@@ -215,6 +216,14 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
             mProfile.setBfProtocols(newValue.toString());
             resetTextN(mPrefBfProtocols, newValue);
             return true;
+        } else if (p == mPrefBfWhitelist) {
+            mProfile.setBfWhitelist(newValue.toString());
+            resetTextN(mPrefBfWhitelist, newValue);
+            return true;
+        } else if (p == mPrefBfFront) {
+            mProfile.setBfFront(newValue.toString());
+            resetTextN(mPrefBfFront, newValue);
+            return true;
         } else if (p == mPrefBfInjectType) {
             mProfile.setBfInjectType(newValue.toString());
             resetListN(mPrefBfInjectType, mPrefBfInjectType.getEntries()[
@@ -267,6 +276,8 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
         mPrefBfCores = (EditTextPreference) findPreference(PREF_BF_CORES);
         mPrefBfProtocols = (EditTextPreference) findPreference(PREF_BF_PROTOCOLS);
         mPrefBfInjectType = (ListPreference) findPreference(PREF_BF_INJECT_TYPE);
+        mPrefBfWhitelist = (EditTextPreference) findPreference(PREF_BF_WHITELIST);
+        mPrefBfFront = (EditTextPreference) findPreference(PREF_BF_FRONT);
 
         mPrefProfile.setOnPreferenceChangeListener(this);
         mPrefServer.setOnPreferenceChangeListener(this);
@@ -290,6 +301,8 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
         mPrefBfCores.setOnPreferenceChangeListener(this);
         mPrefBfProtocols.setOnPreferenceChangeListener(this);
         mPrefBfInjectType.setOnPreferenceChangeListener(this);
+        mPrefBfWhitelist.setOnPreferenceChangeListener(this);
+        mPrefBfFront.setOnPreferenceChangeListener(this);
     }
 
     private void reload() {
@@ -322,8 +335,11 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
         mPrefBfRegion.setText(mProfile.getBfRegion());
         mPrefBfCores.setText(String.valueOf(mProfile.getBfCores()));
         mPrefBfProtocols.setText(mProfile.getBfProtocols());
+        mPrefBfWhitelist.setText(mProfile.getBfWhitelist());
+        mPrefBfFront.setText(mProfile.getBfFront());
         resetText(mPrefServer, mPrefPort, mPrefUsername, mPrefPassword, mPrefDns, mPrefDnsPort, mPrefUDPGW,
-                mPrefBfPayload, mPrefBfSni, mPrefBfRegion, mPrefBfCores, mPrefBfProtocols);
+                mPrefBfPayload, mPrefBfSni, mPrefBfRegion, mPrefBfCores, mPrefBfProtocols,
+                mPrefBfWhitelist, mPrefBfFront);
 
         mPrefBfInjectType.setValue(String.valueOf(mProfile.getBfInjectType()));
         resetList(mPrefBfInjectType);

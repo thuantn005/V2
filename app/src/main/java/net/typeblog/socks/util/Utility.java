@@ -126,7 +126,9 @@ public class Utility {
                 .putExtra(INTENT_BF_REGION, profile.getBfRegion())
                 .putExtra(INTENT_BF_CORES, profile.getBfCores())
                 .putExtra(INTENT_BF_INJECT_TYPE, profile.getBfInjectType())
-                .putExtra(INTENT_BF_PROTOCOLS, profile.getBfProtocols());
+                .putExtra(INTENT_BF_PROTOCOLS, profile.getBfProtocols())
+                .putExtra(INTENT_BF_WHITELIST, profile.getBfWhitelist())
+                .putExtra(INTENT_BF_FRONT, profile.getBfFront());
 
         if (profile.isUserPw()) {
             i.putExtra(INTENT_USERNAME, profile.getUsername())

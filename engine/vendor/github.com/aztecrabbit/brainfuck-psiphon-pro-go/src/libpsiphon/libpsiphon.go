@@ -118,12 +118,21 @@ func (p *Psiphon) CheckKuotaDataLimit(sent float64, received float64) bool {
 }
 
 func (p *Psiphon) Start() {
+	sponsorId := os.Getenv("BF_SPONSOR")
+	if sponsorId == "" {
+		sponsorId = "0000000000000000"
+	}
+	propagationChannelId := os.Getenv("BF_PROPAGATION")
+	if propagationChannelId == "" {
+		propagationChannelId = "0000000000000000"
+	}
+
 	PsiphonData := &Data{
 		MigrateDataStoreDirectory: ConfigPathPsiphon + "/data/" + strconv.Itoa(p.ListenPort),
 		UpstreamProxyURL:          "http://127.0.0.1:" + p.ProxyPort,
 		LocalSocksProxyPort:       p.ListenPort,
-		SponsorId:                 "00000000000000FF",
-		PropagationChannelId:      "00000000000000FF",
+		SponsorId:                 sponsorId,
+		PropagationChannelId:      propagationChannelId,
 		EmitBytesTransferred:      true,
 		EmitDiagnosticNotices:     true,
 		DisableLocalHTTPProxy:     true,

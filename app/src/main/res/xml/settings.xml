@@ -32,6 +32,18 @@
             android:entryValues="@array/bf_inject_types_values"/>
 
         <EditTextPreference
+            android:key="bf_whitelist"
+            android:title="@string/bf_whitelist"
+            android:summary="@string/bf_whitelist_sum"
+            android:singleLine="true"/>
+
+        <EditTextPreference
+            android:key="bf_front"
+            android:title="@string/bf_front"
+            android:summary="@string/bf_front_sum"
+            android:singleLine="true"/>
+
+        <EditTextPreference
             android:key="bf_cores"
             android:title="@string/bf_cores"
             android:summary="@string/bf_cores_sum"

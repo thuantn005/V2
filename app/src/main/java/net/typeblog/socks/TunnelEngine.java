@@ -65,7 +65,7 @@ public class TunnelEngine {
      * @return true if the engine process started and the SOCKS port came up
      */
     public boolean start(String payload, String sni, String region, int cores,
-                         int injectType, String protocols) {
+                         int injectType, String protocols, String whitelist, String front) {
         String bin = mContext.getApplicationInfo().nativeLibraryDir + "/libbrainfuck.so";
         if (!new File(bin).exists()) {
             Log.e(TAG, "engine binary missing: " + bin);
@@ -100,6 +100,12 @@ public class TunnelEngine {
         }
         if (protocols != null && !protocols.isEmpty()) {
             env.put("BF_PROTOCOLS", protocols);
+        }
+        if (whitelist != null && !whitelist.isEmpty()) {
+            env.put("BF_WHITELIST", whitelist);
+        }
+        if (front != null && !front.isEmpty()) {
+            env.put("BF_FRONT", front);
         }
 
         try {

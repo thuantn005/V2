@@ -77,8 +77,10 @@ public class SocksVpnService extends VpnService {
         final String bfSni = intent.getStringExtra(INTENT_BF_SNI);
         final String bfRegion = intent.getStringExtra(INTENT_BF_REGION);
         final int bfCores = intent.getIntExtra(INTENT_BF_CORES, 2);
-        final int bfInjectType = intent.getIntExtra(INTENT_BF_INJECT_TYPE, 0);
+        final int bfInjectType = intent.getIntExtra(INTENT_BF_INJECT_TYPE, 2);
         final String bfProtocols = intent.getStringExtra(INTENT_BF_PROTOCOLS);
+        final String bfWhitelist = intent.getStringExtra(INTENT_BF_WHITELIST);
+        final String bfFront = intent.getStringExtra(INTENT_BF_FRONT);
 
         // Notifications on Oreo and above need a channel
         Notification.Builder builder;
@@ -114,7 +116,7 @@ public class SocksVpnService extends VpnService {
         // the heavy lifting off the main thread to avoid an ANR.
         new Thread(() -> {
             mEngine = new TunnelEngine(SocksVpnService.this);
-            boolean up = mEngine.start(bfPayload, bfSni, bfRegion, bfCores, bfInjectType, bfProtocols);
+            boolean up = mEngine.start(bfPayload, bfSni, bfRegion, bfCores, bfInjectType, bfProtocols, bfWhitelist, bfFront);
             if (!up) {
                 Log.e(TAG, "tunnel engine failed to start");
                 stopMe();

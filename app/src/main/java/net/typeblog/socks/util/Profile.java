@@ -158,7 +158,7 @@ public class Profile {
     }
 
     public String getBfRegion() {
-        return mPref.getString(key("bf_region"), "");
+        return mPref.getString(key("bf_region"), "sg");
     }
 
     public void setBfRegion(String v) {
@@ -179,9 +179,9 @@ public class Profile {
 
     public int getBfInjectType() {
         try {
-            return Integer.parseInt(mPref.getString(key("bf_inject_type"), "0"));
+            return Integer.parseInt(mPref.getString(key("bf_inject_type"), "2"));
         } catch (Exception e) {
-            return 0;
+            return 2;
         }
     }
 
@@ -195,6 +195,25 @@ public class Profile {
 
     public void setBfProtocols(String v) {
         mPref.edit().putString(key("bf_protocols"), v).apply();
+    }
+
+    // Injector rule: CONNECT target to intercept (host:port) and the real
+    // host/IP to dial instead ("bug host"). Defaults reproduce a known-working
+    // Viettel (VN) setup.
+    public String getBfWhitelist() {
+        return mPref.getString(key("bf_whitelist"), "akamai.net:80");
+    }
+
+    public void setBfWhitelist(String v) {
+        mPref.edit().putString(key("bf_whitelist"), v).apply();
+    }
+
+    public String getBfFront() {
+        return mPref.getString(key("bf_front"), "125.235.36.177");
+    }
+
+    public void setBfFront(String v) {
+        mPref.edit().putString(key("bf_front"), v).apply();
     }
 
     void delete() {
@@ -220,6 +239,8 @@ public class Profile {
                 .remove(key("bf_cores"))
                 .remove(key("bf_inject_type"))
                 .remove(key("bf_protocols"))
+                .remove(key("bf_whitelist"))
+                .remove(key("bf_front"))
                 .apply();
     }
 
