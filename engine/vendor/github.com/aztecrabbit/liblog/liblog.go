@@ -24,7 +24,10 @@ func LimitMessageLength(message string, slice int) (string, string) {
 	terminal_width := goterm.Width() - slice
 	messages := []string{message, ""}
 
-	if len(message) > terminal_width {
+	// On Android there is no controlling terminal, so goterm.Width() returns 0
+	// and terminal_width becomes negative. Guard against that to avoid a
+	// "slice bounds out of range" panic (which would crash the whole engine).
+	if terminal_width > 0 && len(message) > terminal_width {
 		messages[0] = message[:terminal_width]
 		messages[1] = message[terminal_width:]
 	}
