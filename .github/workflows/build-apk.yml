@@ -152,18 +152,37 @@ jobs:
           path: out/*.apk
           if-no-files-found: error
 
-      # Publish a rolling release so the APKs have a stable, public, phone-
-      # friendly download page (no login, unlike run artifacts). The runner's
-      # GITHUB_TOKEN (contents: write) creates/updates the tag and release.
-      - name: Publish APKs to Release
+      # Rolling release — a stable, phone-friendly download link that always
+      # points at the newest build.
+      - name: Publish latest release
         if: success()
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-latest
           name: Brainfuck VPN — latest build
           body: |
-            Automated build of Brainfuck VPN (Brainfuck-Psiphon × SocksDroid).
-            Install `app-debug.apk` on your Android device (allow "install from
-            unknown sources"). ABIs: arm64-v8a, armeabi-v7a, x86_64.
+            Latest automated build of Brainfuck VPN (Brainfuck-Psiphon × SocksDroid).
+
+            - Build: #${{ github.run_number }}
+            - Commit: ${{ github.sha }}
+            - Full version history: see the Releases page (build-<number> tags).
+
+            Install `app-debug.apk` (allow "install from unknown sources").
+            ABIs: arm64-v8a, armeabi-v7a, x86_64.
+          files: out/*.apk
+          fail_on_unmatched_files: true
+
+      # Versioned release — one per build, so the Releases page keeps a full
+      # history of every APK instead of overwriting a single tag.
+      - name: Publish versioned release
+        if: success()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Brainfuck VPN build #${{ github.run_number }}
+          body: |
+            Build #${{ github.run_number }} — commit ${{ github.sha }}
+
+            ${{ github.event.head_commit.message }}
           files: out/*.apk
           fail_on_unmatched_files: true
