@@ -158,7 +158,7 @@ public class Profile {
     }
 
     public String getBfRegion() {
-        return mPref.getString(key("bf_region"), "sg");
+        return mPref.getString(key("bf_region"), "");
     }
 
     public void setBfRegion(String v) {

@@ -33,24 +33,38 @@ public class TunnelEngine {
         mContext = context;
     }
 
-    /** Copy the bundled Psiphon server-list datastore out of assets (once). */
-    private String prepareBoltdb() {
-        File out = new File(mContext.getFilesDir(), "psiphon.boltdb");
-        if (!out.exists() || out.length() == 0) {
-            AssetManager am = mContext.getAssets();
-            try (InputStream in = am.open("psiphon.boltdb");
-                 OutputStream os = new FileOutputStream(out)) {
-                byte[] buf = new byte[8192];
-                int n;
-                while ((n = in.read(buf)) > 0) {
-                    os.write(buf, 0, n);
-                }
-            } catch (Exception e) {
-                Log.w(TAG, "could not copy bundled boltdb: " + e.getMessage());
-                return "";
+    /** Copy the bundled Psiphon embedded server list out of assets, overwriting
+     *  any older copy so app updates ship a fresh server list. It is imported by
+     *  psiphon-tunnel-core via its -serverList flag. */
+    private String prepareServerList() {
+        File out = new File(mContext.getFilesDir(), "server_list");
+        AssetManager am = mContext.getAssets();
+        try (InputStream in = am.open("server_list");
+             OutputStream os = new FileOutputStream(out)) {
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = in.read(buf)) > 0) {
+                os.write(buf, 0, n);
             }
+        } catch (Exception e) {
+            Log.w(TAG, "could not copy bundled server list: " + e.getMessage());
+            return "";
         }
         return out.getAbsolutePath();
+    }
+
+    private static void deleteRecursive(File f) {
+        if (f == null || !f.exists()) {
+            return;
+        }
+        File[] kids = f.listFiles();
+        if (kids != null) {
+            for (File k : kids) {
+                deleteRecursive(k);
+            }
+        }
+        //noinspection ResultOfMethodCallIgnored
+        f.delete();
     }
 
     /**
@@ -72,8 +86,14 @@ public class TunnelEngine {
             return false;
         }
 
-        String boltdb = prepareBoltdb();
         File filesDir = mContext.getFilesDir();
+
+        // Wipe any stale per-core datastore so Psiphon re-seeds from the current
+        // bundled server list (otherwise an old, dead server list would linger
+        // across app updates and the tunnel would never connect).
+        deleteRecursive(new File(filesDir, "brainfuck-psiphon-pro-go"));
+
+        String serverList = prepareServerList();
 
         ProcessBuilder pb = new ProcessBuilder(bin);
         pb.directory(filesDir);
@@ -82,8 +102,8 @@ public class TunnelEngine {
         Map<String, String> env = pb.environment();
         env.put("HOME", filesDir.getAbsolutePath());
         env.put("BF_CONFIG_HOME", filesDir.getAbsolutePath());
-        if (!boltdb.isEmpty()) {
-            env.put("BF_BOLTDB", boltdb);
+        if (!serverList.isEmpty()) {
+            env.put("BF_SERVERLIST", serverList);
         }
         env.put("BF_CORE_NAME", "libpsiphon.so");
         env.put("BF_ROTATOR_PORT", String.valueOf(LOCAL_PORT));

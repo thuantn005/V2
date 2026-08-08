@@ -132,7 +132,7 @@ func main() {
 	// --- Psiphon configuration --------------------------------------------
 	psiConfig := libpsiphon.DefaultConfig
 	psiConfig.CoreName = coreName
-	psiConfig.Region = strings.ToLower(env("BF_REGION", "sg"))
+	psiConfig.Region = strings.ToLower(env("BF_REGION", ""))
 	psiConfig.Tunnel = envInt("BF_TUNNEL", 1)
 	psiConfig.TunnelWorkers = envInt("BF_WORKERS", 6)
 	psiConfig.KuotaDataLimit = envInt("BF_LIMIT", 0) // 0 = unlimited

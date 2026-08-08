@@ -145,16 +145,21 @@ func (p *Psiphon) Start() {
 
 	libutils.JsonWrite(PsiphonData, PsiphonData.MigrateDataStoreDirectory+"/config.json")
 
+	// Optional legacy boltdb seed (kept for backward compatibility).
 	PsiphonFileBoltdb := PsiphonData.MigrateDataStoreDirectory + "/ca.psiphon.PsiphonTunnel.tunnel-core/datastore/psiphon.boltdb"
 	if _, err := os.Stat(PsiphonFileBoltdb); os.IsNotExist(err) {
 		seed := os.Getenv("BF_BOLTDB")
-		if seed == "" {
-			seed = libutils.RealPath("/storage/psiphon/database/psiphon.boltdb")
-		}
-		if _, serr := os.Stat(seed); serr == nil {
-			libutils.CopyFile(seed, PsiphonFileBoltdb)
+		if seed != "" {
+			if _, serr := os.Stat(seed); serr == nil {
+				libutils.CopyFile(seed, PsiphonFileBoltdb)
+			}
 		}
 	}
+
+	// Fresh server list imported via psiphon-tunnel-core's own -serverList flag
+	// (the official ImportEmbeddedServerEntries path). This avoids depending on
+	// a stale bundled datastore.
+	serverList := os.Getenv("BF_SERVERLIST")
 
 	p.LogInfo("Connecting", liblog.Colors["G1"])
 
@@ -163,9 +168,11 @@ func (p *Psiphon) Start() {
 		p.KuotaData.Port[p.ListenPort]["all"] = 0
 		p.TunnelConnected = 0
 
-		command := exec.Command(
-			libutils.RealPath(p.Config.CoreName), "-config", PsiphonData.MigrateDataStoreDirectory+"/config.json",
-		)
+		args := []string{"-config", PsiphonData.MigrateDataStoreDirectory + "/config.json"}
+		if serverList != "" {
+			args = append(args, "-serverList", serverList)
+		}
+		command := exec.Command(libutils.RealPath(p.Config.CoreName), args...)
 		command.Dir = PsiphonData.MigrateDataStoreDirectory
 
 		stderr, err := command.StderrPipe()
