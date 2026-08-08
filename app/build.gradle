@@ -21,6 +21,8 @@ android {
         // SocksVpnService talks to the UI through an .aidl interface; AGP 8
         // disables AIDL by default so we must turn it back on.
         aidl true
+        // BuildConfig (used for BuildConfig.DEBUG) is also off by default in AGP 8.
+        buildConfig true
     }
 
     // Native tunnel binaries (libbrainfuck.so, libpsiphon.so, libtun2socks.so …)

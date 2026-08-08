@@ -130,8 +130,8 @@ public class TunnelEngine {
 
     /** Poll the local SOCKS port until it accepts a connection or we time out. */
     private boolean waitForSocks(int timeoutMs) {
-        long deadline = System.currentTimeMillis() + timeoutMs;
-        while (System.currentTimeMillis() < deadline) {
+        long deadline = java.lang.System.currentTimeMillis() + timeoutMs;
+        while (java.lang.System.currentTimeMillis() < deadline) {
             if (mProcess != null && !mProcess.isAlive()) {
                 Log.e(TAG, "engine exited early; see engine.log");
                 return false;
