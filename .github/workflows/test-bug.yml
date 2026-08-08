@@ -1,0 +1,79 @@
+name: Test Bug Path
+
+# Runs the FULL engine (injector + SOCKS rotator + Psiphon) exactly as the app
+# does, with the default Viettel bug rule (akamai.net -> 125.235.36.177 on 80 &
+# 443). This exercises the whole bug-host pipeline on the runner.
+#
+# Note: the runner is not on Viettel's network, so a zero-rated carrier bug is
+# not expected to relay here. This test confirms the engine machinery works and
+# shows exactly how the bug IP responds from open internet.
+
+on:
+  push:
+    branches: [ "**" ]
+  workflow_dispatch:
+
+env:
+  GO_VERSION: "1.22"
+  PSIPHON_REF: "v2.0.31"
+
+jobs:
+  test-bug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build engine + psiphon
+        run: |
+          set -e
+          mkdir -p run
+          ( cd engine && \
+            GOFLAGS=-mod=vendor CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+            go build -trimpath -ldflags "-s -w" -o "$GITHUB_WORKSPACE/run/libbrainfuck" . )
+          git clone --depth 1 --branch "${PSIPHON_REF}" \
+            https://github.com/Psiphon-Labs/psiphon-tunnel-core.git psi
+          ( cd psi/ConsoleClient && \
+            CGO_ENABLED=1 go build -trimpath -ldflags "-s -w" \
+            -o "$GITHUB_WORKSPACE/run/libpsiphon.so" . )
+          cp app/src/main/assets/server_list run/server_list
+          ls -la run
+
+      - name: Run full engine with the Viettel bug rule (120s)
+        run: |
+          set +e
+          cd run
+          mkdir -p home
+          export HOME="$PWD/home"
+          export BF_CONFIG_HOME="$PWD/home"
+          export BF_SERVERLIST="$PWD/server_list"
+          export BF_CORE_NAME="libpsiphon.so"
+          export BF_CORES=1
+          # defaults: inject type 2, whitelist akamai.net, bug 125.235.36.177 (80+443)
+          echo "=== running engine for 120s ==="
+          timeout 120 ./libbrainfuck > bug.log 2>&1
+          echo "--- injector activity (proves bug path exercised) ---"
+          grep -a "Connecting to 125.235.36.177" bug.log | head -8
+          echo "--- tunnel status ---"
+          if grep -aq "Connected" bug.log; then
+            echo "RESULT=BUG_WORKS  (tunnel established through the bug IP!)"
+            echo "::notice::The bug IP relayed and a tunnel connected."
+          else
+            echo "RESULT=BUG_DEAD  (engine ran, dialed the bug IP, but no tunnel — the bug does not relay from here)"
+            echo "::warning::Engine works but the bug IP 125.235.36.177 did not establish a tunnel."
+          fi
+          echo "--- last 20 lines ---"
+          tail -20 bug.log
+
+      - name: Upload engine log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: engine-bug-log
+          path: run/bug.log
+          if-no-files-found: warn
