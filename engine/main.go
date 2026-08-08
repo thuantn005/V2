@@ -104,14 +104,30 @@ func main() {
 	if sni := os.Getenv("BF_SNI"); sni != "" {
 		Inject.Config.ServerNameIndication = sni
 	}
-	// Injection rules: BF_WHITELIST -> comma separated BF_FRONT hosts/IPs.
-	// Defaults reproduce a known-working Viettel (VN) "bug host" setup:
-	// Psiphon fronts through akamai.net:80 but the injector dials the
-	// zero-rated IP instead.
-	whitelist := env("BF_WHITELIST", "akamai.net:80")
+	// Injection rules map a fronted CONNECT target to the carrier "bug" the
+	// injector should dial instead. Defaults reproduce a working Viettel (VN)
+	// setup: Psiphon fronts through akamai.net but the injector dials the
+	// zero-rated IP 125.235.36.177.
+	//
+	// If BF_WHITELIST includes a port (e.g. "akamai.net:80") a single rule is
+	// used. If it is host-only (e.g. "akamai.net") we bug BOTH meek ports —
+	// 80 (FRONTED-MEEK-HTTP-OSSH) and 443 (FRONTED-MEEK-OSSH) — to the bug on
+	// the matching port, so servers fronting on 443 are not dropped.
+	whitelist := env("BF_WHITELIST", "akamai.net")
 	front := env("BF_FRONT", "125.235.36.177")
-	Inject.Config.Rules = map[string][]string{
-		whitelist: strings.Split(front, ","),
+	if strings.Contains(whitelist, ":") {
+		Inject.Config.Rules = map[string][]string{
+			whitelist: strings.Split(front, ","),
+		}
+	} else {
+		bug := front
+		if strings.Contains(bug, ":") {
+			bug = strings.SplitN(bug, ":", 2)[0]
+		}
+		Inject.Config.Rules = map[string][]string{
+			whitelist + ":80":  {bug + ":80"},
+			whitelist + ":443": {bug + ":443"},
+		}
 	}
 
 	go ProxyRotator.Start()

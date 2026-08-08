@@ -201,7 +201,7 @@ public class Profile {
     // host/IP to dial instead ("bug host"). Defaults reproduce a known-working
     // Viettel (VN) setup.
     public String getBfWhitelist() {
-        return mPref.getString(key("bf_whitelist"), "akamai.net:80");
+        return mPref.getString(key("bf_whitelist"), "akamai.net");
     }
 
     public void setBfWhitelist(String v) {
