@@ -20,7 +20,11 @@ permissions:
 
 env:
   GO_VERSION: "1.22"
-  PSIPHON_REF: "master"
+  # Pinned to a classic FRONTED-MEEK release: newer psiphon (>= v2.0.32) added
+  # the in-proxy broker + DSL fetcher, which are incompatible with the simple
+  # bug-host upstream-proxy setup and fail with "unexpected EOF". v2.0.31 is the
+  # last release before that and matches the proven Termux behaviour.
+  PSIPHON_REF: "v2.0.31"
   # Android API level the native binaries target (minSdk of the app).
   ANDROID_API: "21"
   # Pin an NDK that ships the android21 clang wrappers (the preinstalled r29
@@ -104,10 +108,7 @@ jobs:
               export CGO_ENABLED=1 GOOS=android GOARCH="$goarch"
               export CC="$TC/$cc"
               [ -n "$goarm" ] && export GOARM="$goarm"
-              # -checklinkname=0: dependency github.com/wlynxg/anet uses
-              # go:linkname against net.zoneCache, which Go 1.23+ rejects by
-              # default. Disable the check so psiphon links on modern toolchains.
-              go build -trimpath -ldflags "-s -w -checklinkname=0" \
+              go build -trimpath -ldflags "-s -w" \
                 -o "$GITHUB_WORKSPACE/app/src/main/jniLibs/$abi/libpsiphon.so" .
             )
           }
