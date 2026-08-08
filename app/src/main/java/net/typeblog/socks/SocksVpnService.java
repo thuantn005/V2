@@ -38,6 +38,7 @@ public class SocksVpnService extends VpnService {
 
     private ParcelFileDescriptor mInterface;
     private boolean mRunning = false;
+    private boolean mStarting = false;
     private TunnelEngine mEngine;
     private final IBinder mBinder = new VpnBinder();
 
@@ -52,9 +53,10 @@ public class SocksVpnService extends VpnService {
             return START_STICKY;
         }
 
-        if (mRunning) {
+        if (mRunning || mStarting) {
             return START_STICKY;
         }
+        mStarting = true;
 
         final String name = intent.getStringExtra(INTENT_NAME);
         // The embedded Brainfuck-Psiphon engine always exposes its SOCKS5 proxy
@@ -131,6 +133,8 @@ public class SocksVpnService extends VpnService {
 
             if (mInterface != null)
                 start(mInterface.getFd(), server, port, username, passwd, dns, dnsPort, ipv6, udpgw);
+
+            mStarting = false;
         }, "vpn-startup").start();
 
         return START_STICKY;
@@ -155,6 +159,7 @@ public class SocksVpnService extends VpnService {
     }
 
     private void stopMe() {
+        mStarting = false;
         stopForeground(true);
 
         if (mEngine != null) {

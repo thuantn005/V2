@@ -86,6 +86,10 @@ public class TunnelEngine {
             return false;
         }
 
+        // Kill any engine/psiphon process left over from a previous session,
+        // otherwise the injector fails with "bind: address already in use".
+        killStale();
+
         File filesDir = mContext.getFilesDir();
 
         // Wipe any stale per-core datastore so Psiphon re-seeds from the current
@@ -183,6 +187,63 @@ public class TunnelEngine {
             } catch (Exception ignored) {
             }
             mProcess = null;
+        }
+        // Reap any child psiphon processes the engine spawned.
+        killStale();
+    }
+
+    /**
+     * Kill leftover engine / psiphon processes belonging to this app. Under the
+     * app UID we can only see (and kill) our own processes in /proc, which is
+     * exactly what we want.
+     */
+    private void killStale() {
+        int myPid = android.os.Process.myPid();
+        File proc = new File("/proc");
+        File[] pids = proc.listFiles();
+        if (pids == null) {
+            return;
+        }
+        for (File p : pids) {
+            String name = p.getName();
+            int pid;
+            try {
+                pid = Integer.parseInt(name);
+            } catch (NumberFormatException e) {
+                continue; // not a pid directory
+            }
+            if (pid == myPid) {
+                continue;
+            }
+            String cmdline = readSmall(new File(p, "cmdline"));
+            if (cmdline == null) {
+                continue;
+            }
+            if (cmdline.contains("libbrainfuck.so") || cmdline.contains("libpsiphon.so")) {
+                try {
+                    android.os.Process.killProcess(pid);
+                } catch (Exception ignored) {
+                }
+            }
+        }
+    }
+
+    private static String readSmall(File f) {
+        try (InputStream in = new java.io.FileInputStream(f)) {
+            byte[] buf = new byte[4096];
+            int n = in.read(buf);
+            if (n <= 0) {
+                return null;
+            }
+            // cmdline is NUL-separated; turn NULs into spaces for matching.
+            for (int i = 0; i < n; i++) {
+                if (buf[i] == 0) {
+                    buf[i] = ' ';
+                }
+            }
+            return new String(buf, 0, n);
+        } catch (Exception e) {
+            return null;
         }
     }
 }
