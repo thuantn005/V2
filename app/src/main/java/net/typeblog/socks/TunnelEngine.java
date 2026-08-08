@@ -4,12 +4,12 @@ import android.content.Context;
 import android.content.res.AssetManager;
 import android.util.Log;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.util.Map;
 
 /**
@@ -155,27 +155,52 @@ public class TunnelEngine {
             }
         }, "engine-log").start();
 
-        return waitForSocks(60000);
+        // Wait for Psiphon to actually establish a tunnel, NOT just for the SOCKS
+        // port to open. This matters on Android: if the VPN/tun2socks is brought
+        // up while Psiphon is still connecting, Psiphon's own bootstrap traffic to
+        // the bug host gets captured by the tun (which has no working proxy yet)
+        // and dies with "unexpected EOF" — a deadlock. By waiting for "Connected"
+        // first, the tunnel is established with no VPN in the way (exactly like the
+        // successful GitHub runner test), and only then does the VpnService start
+        // routing.
+        return waitForTunnel(150000);
     }
 
-    /** Poll the local SOCKS port until it accepts a connection or we time out. */
-    private boolean waitForSocks(int timeoutMs) {
+    /** Wait until Psiphon logs an active tunnel ("Connected") or we time out. */
+    private boolean waitForTunnel(int timeoutMs) {
+        File log = new File(mContext.getFilesDir(), "engine.log");
         long deadline = java.lang.System.currentTimeMillis() + timeoutMs;
         while (java.lang.System.currentTimeMillis() < deadline) {
             if (mProcess != null && !mProcess.isAlive()) {
                 Log.e(TAG, "engine exited early; see engine.log");
                 return false;
             }
-            try (Socket s = new Socket()) {
-                s.connect(new InetSocketAddress(LOCAL_ADDR, LOCAL_PORT), 1000);
+            if (logContains(log, "Connected")) {
                 return true;
-            } catch (Exception e) {
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException ie) {
-                    return false;
+            }
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ie) {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    /** True if any line of the file contains the marker. */
+    private boolean logContains(File f, String marker) {
+        if (!f.exists()) {
+            return false;
+        }
+        try (BufferedReader r = new BufferedReader(new FileReader(f))) {
+            String line;
+            while ((line = r.readLine()) != null) {
+                // "Connecting"/"Reconnecting" do not contain the exact word.
+                if (line.contains(marker)) {
+                    return true;
                 }
             }
+        } catch (Exception ignored) {
         }
         return false;
     }
