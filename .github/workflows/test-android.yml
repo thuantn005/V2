@@ -1,0 +1,102 @@
+name: Test Android Connect
+
+# Runs the ANDROID psiphon binary inside a real Android emulator on the runner
+# (open internet). This reproduces the Android environment (SELinux/netlink
+# restrictions, bionic) while removing the carrier variable, to see whether the
+# Android build itself can establish a tunnel — and if not, capture the exact
+# error.
+
+on:
+  push:
+    branches: [ "**" ]
+  workflow_dispatch:
+
+env:
+  GO_VERSION: "1.22"
+  PSIPHON_REF: "v2.0.31"
+  ANDROID_API: "21"
+  NDK_VERSION: "26.3.11579264"
+
+jobs:
+  test-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build psiphon for android/x86_64
+        run: |
+          set -e
+          NDK="$ANDROID_SDK_ROOT/ndk/${NDK_VERSION}"
+          [ -d "$NDK" ] || (yes | sdkmanager "ndk;${NDK_VERSION}" >/dev/null)
+          TC="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          git clone --depth 1 --branch "${PSIPHON_REF}" \
+            https://github.com/Psiphon-Labs/psiphon-tunnel-core.git psi
+          ( cd psi/ConsoleClient && \
+            CGO_ENABLED=1 GOOS=android GOARCH=amd64 \
+            CC="$TC/x86_64-linux-android${ANDROID_API}-clang" \
+            go build -trimpath -ldflags "-s -w" -o "$GITHUB_WORKSPACE/psi_android" . )
+          file psi_android
+          cat > config.json <<'JSON'
+          {
+            "SponsorId": "0000000000000000",
+            "PropagationChannelId": "0000000000000000",
+            "LocalSocksProxyPort": 1080,
+            "DisableLocalHTTPProxy": true,
+            "EmitDiagnosticNotices": true,
+            "EmitBytesTransferred": true
+          }
+          JSON
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run psiphon inside Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86_64
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          disable-animations: true
+          script: |
+            set +e
+            adb push psi_android /data/local/tmp/psi
+            adb push config.json /data/local/tmp/config.json
+            adb push app/src/main/assets/server_list /data/local/tmp/server_list
+            adb shell chmod 755 /data/local/tmp/psi
+            echo "=== running android psiphon binary for 150s ==="
+            adb shell "cd /data/local/tmp && mkdir -p d && timeout 150 ./psi -config config.json -serverList server_list -dataRootDirectory /data/local/tmp/d > psi.log 2>&1"
+            adb pull /data/local/tmp/psi.log psi.log
+            echo "--- last 40 lines ---"
+            tail -40 psi.log
+            echo "--- notice type counts ---"
+            grep -oE '"noticeType":"[A-Za-z]+"' psi.log | sort | uniq -c | sort -rn | head
+            echo "--- errors / denied / EOF ---"
+            grep -iE 'error|denied|EOF|failed' psi.log | tail -25
+            if grep -q '"noticeType":"Tunnels"' psi.log && grep -q '"count":1' psi.log; then
+              echo "RESULT=ANDROID_CONNECTED"
+            elif grep -q '"noticeType":"ActiveTunnel"' psi.log; then
+              echo "RESULT=ANDROID_CONNECTED"
+            else
+              echo "RESULT=ANDROID_NOT_CONNECTED"
+            fi
+
+      - name: Upload android psiphon log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-psiphon-log
+          path: psi.log
+          if-no-files-found: warn
