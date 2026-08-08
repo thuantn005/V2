@@ -5,9 +5,12 @@ import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Color;
 import android.net.VpnService;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.preference.CheckBoxPreference;
 import android.preference.EditTextPreference;
 import android.preference.Preference;
@@ -15,13 +18,16 @@ import android.preference.PreferenceFragment;
 import android.preference.ListPreference;
 import android.text.InputType;
 import android.text.TextUtils;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MenuInflater;
-import android.widget.CompoundButton;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ScrollView;
-import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -37,13 +43,15 @@ import java.util.Locale;
 
 import static net.typeblog.socks.util.Constants.*;
 
-public class ProfileFragment extends PreferenceFragment implements Preference.OnPreferenceClickListener, Preference.OnPreferenceChangeListener,
-        CompoundButton.OnCheckedChangeListener {
+public class ProfileFragment extends PreferenceFragment implements Preference.OnPreferenceClickListener, Preference.OnPreferenceChangeListener {
     private ProfileManager mManager;
     private Profile mProfile;
 
-    private Switch mSwitch;
+    private Button mConnectButton;
+    private TextView mStatusText;
+    private final Handler mHandler = new Handler(Looper.getMainLooper());
     private boolean mRunning = false;
+    private boolean mTunnelUp = false;
     private boolean mStarting = false, mStopping = false;
     private final ServiceConnection mConnection = new ServiceConnection() {
         @Override
@@ -70,7 +78,7 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
         @Override
         public void run() {
             updateState();
-            mSwitch.postDelayed(this, 1000);
+            mHandler.postDelayed(this, 1000);
         }
     };
     private IVpnService mBinder;
@@ -93,15 +101,42 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
     }
 
     @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View prefView = super.onCreateView(inflater, container, savedInstanceState);
+
+        LinearLayout root = new LinearLayout(getActivity());
+        root.setOrientation(LinearLayout.VERTICAL);
+
+        View header = inflater.inflate(R.layout.connect_header, root, false);
+        mStatusText = header.findViewById(R.id.txt_status);
+        mConnectButton = header.findViewById(R.id.btn_connect);
+        mConnectButton.setOnClickListener(v -> onConnectClicked());
+        root.addView(header);
+
+        prefView.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
+        root.addView(prefView);
+        return root;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        checkState();
+        mHandler.removeCallbacks(mStateRunnable);
+        mHandler.post(mStateRunnable);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        mHandler.removeCallbacks(mStateRunnable);
+    }
+
+    @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
         inflater.inflate(R.menu.main, menu);
-
-        MenuItem s = menu.findItem(R.id.switch_main);
-        mSwitch = s.getActionView().findViewById(R.id.switch_action_button);
-        mSwitch.setOnCheckedChangeListener(this);
-        mSwitch.postDelayed(mStateRunnable, 1000);
-        checkState();
     }
 
     @Override
@@ -234,12 +269,11 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
         }
     }
 
-    @Override
-    public void onCheckedChanged(CompoundButton p1, boolean checked) {
-        if (checked) {
-            startVpn();
-        } else {
+    private void onConnectClicked() {
+        if (mRunning || mStarting) {
             stopVpn();
+        } else {
+            startVpn();
         }
     }
 
@@ -481,16 +515,35 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
     }
 
     private void checkState() {
-        mRunning = false;
-        mSwitch.setEnabled(false);
-        mSwitch.setOnCheckedChangeListener(null);
-
         if (mBinder == null) {
             getActivity().bindService(new Intent(getActivity(), SocksVpnService.class), mConnection, 0);
         }
     }
 
+    /** True once Psiphon reports an active tunnel (logged as "Connected"). */
+    private boolean tunnelConnected() {
+        File f = new File(getActivity().getFilesDir(), "engine.log");
+        if (!f.exists() || f.length() == 0) {
+            return false;
+        }
+        try (BufferedReader r = new BufferedReader(new FileReader(f))) {
+            String line;
+            while ((line = r.readLine()) != null) {
+                // "Connecting" / "Reconnecting" do not contain the exact word.
+                if (line.contains("Connected")) {
+                    return true;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return false;
+    }
+
     private void updateState() {
+        if (mConnectButton == null || mStatusText == null) {
+            return;
+        }
+
         if (mBinder == null) {
             mRunning = false;
         } else {
@@ -501,25 +554,54 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
             }
         }
 
-        mSwitch.setChecked(mRunning);
-
-        if ((!mStarting && !mStopping) || (mStarting && mRunning) || (mStopping && !mRunning)) {
-            mSwitch.setEnabled(true);
+        if (!mRunning) {
+            mTunnelUp = false;
+        } else if (!mTunnelUp) {
+            mTunnelUp = tunnelConnected();
         }
+
+        String status;
+        int color;
+        String button;
+
+        if (mStarting && !mRunning) {
+            status = getString(R.string.state_starting);
+            color = 0xFFF0A000;
+            button = getString(R.string.action_cancel);
+        } else if (mRunning) {
+            if (mTunnelUp) {
+                status = getString(R.string.state_connected);
+                color = 0xFF2E9E44;
+            } else {
+                status = getString(R.string.state_connecting);
+                color = 0xFFF0A000;
+            }
+            button = getString(R.string.action_disconnect);
+        } else if (mStopping) {
+            status = getString(R.string.state_stopping);
+            color = 0xFFF0A000;
+            button = getString(R.string.action_connect);
+        } else {
+            status = getString(R.string.state_off);
+            color = 0xFF888888;
+            button = getString(R.string.action_connect);
+        }
+
+        mStatusText.setText(status);
+        mStatusText.setTextColor(color);
+        mConnectButton.setText(button);
 
         if (mStarting && mRunning) {
             mStarting = false;
         }
-
         if (mStopping && !mRunning) {
             mStopping = false;
         }
-
-        mSwitch.setOnCheckedChangeListener(ProfileFragment.this);
     }
 
     private void startVpn() {
         mStarting = true;
+        mTunnelUp = false;
         Intent i = VpnService.prepare(getActivity());
 
         if (i != null) {
@@ -530,20 +612,22 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
     }
 
     private void stopVpn() {
-        if (mBinder == null)
-            return;
-
         mStopping = true;
+        mTunnelUp = false;
 
-        try {
-            mBinder.stop();
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (mBinder != null) {
+            try {
+                mBinder.stop();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            mBinder = null;
+            try {
+                getActivity().unbindService(mConnection);
+            } catch (Exception ignored) {
+            }
         }
 
-        mBinder = null;
-
-        getActivity().unbindService(mConnection);
         checkState();
     }
 }

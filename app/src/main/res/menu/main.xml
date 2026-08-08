@@ -12,10 +12,4 @@
         android:id="@+id/prof_del"
         android:title="@string/prof_del"/>
 
-    <item
-        android:id="@+id/switch_main"
-        android:title="@string/switch_main"
-        android:showAsAction="always"
-        android:actionLayout="@layout/action_switch"/>
-
 </menu>

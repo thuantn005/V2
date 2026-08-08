@@ -64,6 +64,16 @@
     <string name="bf_inject_direct">Direct (no injection)</string>
     <string name="bf_inject_payload">Payload / SNI rewrite</string>
 
+    <string name="state_off">Chưa kết nối</string>
+    <string name="state_starting">Đang khởi động…</string>
+    <string name="state_connecting">Đang kết nối… (chờ Psiphon)</string>
+    <string name="state_connected">Đã kết nối ✓</string>
+    <string name="state_stopping">Đang ngắt…</string>
+    <string name="action_connect">KẾT NỐI</string>
+    <string name="action_disconnect">NGẮT KẾT NỐI</string>
+    <string name="action_cancel">HỦY</string>
+    <string name="connect_hint">Xem chi tiết ở menu ⋮ → Tunnel log</string>
+
     <string name="menu_log">Tunnel log</string>
     <string name="log_title">Tunnel log (engine.log)</string>
     <string name="log_empty">No log yet. Turn the VPN on first, then reopen this.</string>
