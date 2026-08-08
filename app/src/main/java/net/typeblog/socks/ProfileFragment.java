@@ -20,8 +20,14 @@ import android.view.MenuItem;
 import android.view.MenuInflater;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.ScrollView;
 import android.widget.Switch;
+import android.widget.TextView;
 import android.widget.Toast;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 
 import net.typeblog.socks.util.Profile;
 import net.typeblog.socks.util.ProfileManager;
@@ -105,6 +111,9 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
             return true;
         } else if (id == R.id.prof_del) {
             removeProfile();
+            return true;
+        } else if (id == R.id.action_log) {
+            showLog();
             return true;
         } else {
             return super.onOptionsItemSelected(item);
@@ -408,6 +417,51 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
 
                 })
                 .create().show();
+    }
+
+    private String readLog() {
+        File f = new File(getActivity().getFilesDir(), "engine.log");
+        if (!f.exists() || f.length() == 0) {
+            return getString(R.string.log_empty);
+        }
+        StringBuilder sb = new StringBuilder();
+        try (BufferedReader r = new BufferedReader(new FileReader(f))) {
+            String line;
+            while ((line = r.readLine()) != null) {
+                sb.append(line).append('\n');
+            }
+        } catch (Exception e) {
+            return "Error reading log: " + e.getMessage();
+        }
+        // The Go engine emits ANSI colour codes; strip them for readability.
+        return sb.toString().replaceAll("\\[[;\\d]*m", "");
+    }
+
+    private void showLog() {
+        final TextView tv = new TextView(getActivity());
+        tv.setText(readLog());
+        tv.setTextSize(11);
+        tv.setPadding(24, 24, 24, 24);
+        tv.setTextIsSelectable(true);
+
+        final ScrollView sv = new ScrollView(getActivity());
+        sv.addView(tv);
+
+        final AlertDialog dialog = new AlertDialog.Builder(getActivity())
+                .setTitle(R.string.log_title)
+                .setView(sv)
+                .setPositiveButton(R.string.log_refresh, null)
+                .setNegativeButton(R.string.log_close, null)
+                .create();
+
+        dialog.setOnShowListener(d ->
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                    tv.setText(readLog());
+                    sv.post(() -> sv.fullScroll(ScrollView.FOCUS_DOWN));
+                }));
+
+        dialog.show();
+        sv.post(() -> sv.fullScroll(ScrollView.FOCUS_DOWN));
     }
 
     private void checkState() {

@@ -1,6 +1,10 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
+        android:id="@+id/action_log"
+        android:title="@string/menu_log"/>
+
+    <item
         android:id="@+id/prof_add"
         android:title="@string/prof_add"/>
 

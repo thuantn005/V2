@@ -60,4 +60,10 @@
     <string name="bf_inject_direct">Direct (no injection)</string>
     <string name="bf_inject_payload">Payload / SNI rewrite</string>
 
+    <string name="menu_log">Tunnel log</string>
+    <string name="log_title">Tunnel log (engine.log)</string>
+    <string name="log_empty">No log yet. Turn the VPN on first, then reopen this.</string>
+    <string name="log_refresh">Refresh</string>
+    <string name="log_close">Close</string>
+
 </resources>
