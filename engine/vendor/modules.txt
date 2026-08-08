@@ -1,0 +1,39 @@
+# github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5
+## explicit
+github.com/armon/go-socks5
+# github.com/aztecrabbit/brainfuck-psiphon-pro-go v0.0.0 => ./third_party/brainfuck
+## explicit; go 1.20
+github.com/aztecrabbit/brainfuck-psiphon-pro-go/src/libpsiphon
+# github.com/aztecrabbit/libinject v0.0.0 => ./third_party/libinject
+## explicit; go 1.20
+github.com/aztecrabbit/libinject
+# github.com/aztecrabbit/liblog v0.0.0 => ./third_party/liblog
+## explicit; go 1.20
+github.com/aztecrabbit/liblog
+# github.com/aztecrabbit/libproxyrotator v0.0.0 => ./third_party/libproxyrotator
+## explicit; go 1.20
+github.com/aztecrabbit/libproxyrotator
+# github.com/aztecrabbit/libredsocks v0.0.0 => ./third_party/libredsocks
+## explicit; go 1.20
+github.com/aztecrabbit/libredsocks
+# github.com/aztecrabbit/libutils v0.0.0 => ./third_party/libutils
+## explicit; go 1.20
+github.com/aztecrabbit/libutils
+# github.com/buger/goterm v1.0.4
+## explicit; go 1.15
+github.com/buger/goterm
+# golang.org/x/net v0.21.0
+## explicit; go 1.18
+golang.org/x/net/context
+golang.org/x/net/internal/socks
+golang.org/x/net/proxy
+# golang.org/x/sys v0.17.0
+## explicit; go 1.18
+golang.org/x/sys/unix
+golang.org/x/sys/windows
+# github.com/aztecrabbit/brainfuck-psiphon-pro-go => ./third_party/brainfuck
+# github.com/aztecrabbit/libinject => ./third_party/libinject
+# github.com/aztecrabbit/liblog => ./third_party/liblog
+# github.com/aztecrabbit/libproxyrotator => ./third_party/libproxyrotator
+# github.com/aztecrabbit/libredsocks => ./third_party/libredsocks
+# github.com/aztecrabbit/libutils => ./third_party/libutils

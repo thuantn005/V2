@@ -1,0 +1,16 @@
+# Gradle / Android build outputs
+.gradle/
+build/
+app/build/
+local.properties
+*.apk
+*.keystore
+
+# Go
+engine/bfpsiphon
+engine/*.so
+
+# Misc
+.DS_Store
+*.iml
+.idea/

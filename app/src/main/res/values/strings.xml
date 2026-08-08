@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Brainfuck VPN</string>
+
+    <string name="profile">Profile</string>
+    <string name="prof_default">Default</string>
+
+    <string name="bf_tunnel">Brainfuck-Psiphon Tunnel</string>
+    <string name="bf_payload">Payload / Bug Host</string>
+    <string name="bf_payload_sum">HTTP injector payload. Example: [raw][crlf]Host: bug.host.com[crlf][crlf] — leave empty for a plain Psiphon tunnel.</string>
+    <string name="bf_sni">SNI (Server Name)</string>
+    <string name="bf_sni_sum">TLS Server Name Indication host used for SNI-based bugs. Leave empty for default.</string>
+    <string name="bf_region">Egress Region</string>
+    <string name="bf_region_sum">Two-letter Psiphon region code (e.g. sg, jp, us). Leave empty for automatic.</string>
+    <string name="bf_inject_type">Injection Method</string>
+    <string name="bf_cores">Tunnel Count</string>
+    <string name="bf_cores_sum">Number of parallel Psiphon tunnels (default 2).</string>
+    <string name="bf_protocols">Tunnel Protocols</string>
+    <string name="bf_protocols_sum">Comma-separated LimitTunnelProtocols. Leave empty for default FRONTED-MEEK.</string>
+
+    <string name="connection">Connection</string>
+    <string name="server_ip">Server IP</string>
+    <string name="server_port">Server Port</string>
+    <string name="ipv6_proxy">IPv6</string>
+    <string name="ipv6_proxy_sum">Enable IPv6 forwarding. If the server supports IPv6, you can access IPv6 contents from IPv4 network with this enabled.</string>
+    <string name="udp_proxy">UDP Forwarding</string>
+    <string name="udp_proxy_sum">Forward UDP packets to badvpn-udpgw via SOCKS5. This needs badvpn-udpgw running on the remote server (normally listening on 127.0.0.1) to work.</string>
+    <string name="udp_gw">UDP Gateway (Remote)</string>
+
+    <string name="authentication">Authentication</string>
+    <string name="auth_userpw">Username &amp; Password Authentication</string>
+    <string name="auth_username">Username</string>
+    <string name="auth_password">Password</string>
+
+    <string name="advanced">Advanced</string>
+    <string name="adv_route">Route</string>
+    <string name="adv_route_all">All (Default)</string>
+    <string name="adv_route_non_chn">Non-Chinese IPs</string>
+    <string name="adv_dns">DNS Server</string>
+    <string name="adv_dns_port">DNS Port (TCP)</string>
+    <string name="adv_auto_connect">Connect on Boot</string>
+    <string name="adv_per_app">Per-app Proxy</string>
+    <string name="adv_app_bypass">Bypass Mode</string>
+    <string name="adv_app_bypass_sum">Enable this option to bypass selected apps instead of proxying them</string>
+    <string name="adv_app_list">App List</string>
+    <string name="adv_app_list_sum">Enter one app\'s package name in one line. See Settings -> Apps for package names of apps.</string>
+
+    <string name="prof_add">Add Profile</string>
+    <string name="prof_del">Delete Profile</string>
+    <string name="prof_del_confirm">Delete profile %s?</string>
+    <string name="switch_main">Switch on / off the proxy</string>
+
+    <string name="err_add_prof">Failed to add profile %s</string>
+    <string name="err_del_prof">Error deleting profile %s</string>
+    <string name="notify_title">Brainfuck VPN activated</string>
+    <string name="notify_msg">Tunnel: %s</string>
+    <string name="channel_name">VPN active</string>
+
+    <string name="bf_inject_direct">Direct (no injection)</string>
+    <string name="bf_inject_payload">Payload / SNI rewrite</string>
+
+</resources>

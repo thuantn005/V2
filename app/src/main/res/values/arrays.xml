@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="adv_routes" translatable="false">
+        <item>@string/adv_route_all</item>
+        <item>@string/adv_route_non_chn</item>
+    </string-array>
+
+    <string-array name="adv_routes_values" translatable="false">
+        <item>all</item>
+        <item>chn</item>
+    </string-array>
+
+    <string-array name="bf_inject_types" translatable="false">
+        <item>@string/bf_inject_direct</item>
+        <item>@string/bf_inject_payload</item>
+    </string-array>
+
+    <string-array name="bf_inject_types_values" translatable="false">
+        <item>0</item>
+        <item>2</item>
+    </string-array>
+</resources>

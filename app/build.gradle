@@ -1,0 +1,60 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace 'net.typeblog.socks'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "net.typeblog.socks"
+        minSdkVersion 21
+        targetSdkVersion 34
+        versionCode 20
+        versionName "2.0"
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildFeatures {
+        // SocksVpnService talks to the UI through an .aidl interface; AGP 8
+        // disables AIDL by default so we must turn it back on.
+        aidl true
+    }
+
+    // Native tunnel binaries (libbrainfuck.so, libpsiphon.so, libtun2socks.so …)
+    // are exec()'d from the native library directory, so they must be extracted
+    // to disk at install time rather than mapped straight from the APK.
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging true
+        }
+    }
+
+    signingConfigs {
+        release {
+            def storePath = project.findProperty('RELEASE_STORE_FILE')
+            if (storePath != null) {
+                storeFile file(storePath)
+                storePassword project.findProperty('RELEASE_STORE_PASSWORD')
+                keyAlias project.findProperty('RELEASE_KEY_ALIAS')
+                keyPassword project.findProperty('RELEASE_KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (project.hasProperty('RELEASE_STORE_FILE')) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+}
