@@ -151,8 +151,18 @@ jobs:
           path: out/*.apk
           if-no-files-found: error
 
-      - name: Attach APKs to Release
-        if: startsWith(github.ref, 'refs/tags/v')
+      # Publish a rolling release so the APKs have a stable, public, phone-
+      # friendly download page (no login, unlike run artifacts). The runner's
+      # GITHUB_TOKEN (contents: write) creates/updates the tag and release.
+      - name: Publish APKs to Release
+        if: success()
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: build-latest
+          name: Brainfuck VPN — latest build
+          body: |
+            Automated build of Brainfuck VPN (Brainfuck-Psiphon × SocksDroid).
+            Install `app-debug.apk` on your Android device (allow "install from
+            unknown sources"). ABIs: arm64-v8a, armeabi-v7a, x86_64.
           files: out/*.apk
+          fail_on_unmatched_files: true
