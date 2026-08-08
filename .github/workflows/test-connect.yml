@@ -53,11 +53,12 @@ jobs:
       - name: Run psiphon (all protocols) and check for a tunnel
         run: |
           set +e
+          mkdir -p "$GITHUB_WORKSPACE/psidata"
           echo "=== Running psiphon for up to 150s (all protocols) ==="
           timeout 150 ./psiphon \
             -config config.json \
             -serverList app/src/main/assets/server_list \
-            -dataRootDirectory ./psidata \
+            -dataRootDirectory "$GITHUB_WORKSPACE/psidata" \
             > psi.log 2>&1
           echo "--- last 30 log lines ---"
           tail -30 psi.log
