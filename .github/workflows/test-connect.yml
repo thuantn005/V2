@@ -1,0 +1,88 @@
+name: Test Psiphon Connect
+
+# Diagnostic: run the pinned Psiphon core with our bundled server list directly
+# on the GitHub runner (open internet, no Viettel bug host). This isolates
+# whether the Psiphon core + server list can establish a tunnel at all.
+#   - PASS  -> the app is correct; the only missing piece is a live carrier bug.
+#   - FAIL  -> the server list / config is the problem.
+
+on:
+  push:
+    branches: [ "**" ]
+  workflow_dispatch:
+
+env:
+  GO_VERSION: "1.22"
+  PSIPHON_REF: "v2.0.31"
+
+jobs:
+  test-connect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build psiphon (host)
+        run: |
+          set -e
+          git clone --depth 1 --branch "${PSIPHON_REF}" \
+            https://github.com/Psiphon-Labs/psiphon-tunnel-core.git psi
+          ( cd psi/ConsoleClient && \
+            CGO_ENABLED=1 go build -trimpath -ldflags "-s -w" -o "$GITHUB_WORKSPACE/psiphon" . )
+          ls -la psiphon
+
+      - name: Write config
+        run: |
+          cat > config.json <<'JSON'
+          {
+            "SponsorId": "0000000000000000",
+            "PropagationChannelId": "0000000000000000",
+            "LocalSocksProxyPort": 1080,
+            "DisableLocalHTTPProxy": true,
+            "EmitDiagnosticNotices": true,
+            "EmitBytesTransferred": true
+          }
+          JSON
+          echo "server_list entries: $(wc -l < app/src/main/assets/server_list)"
+
+      - name: Run psiphon (all protocols) and check for a tunnel
+        run: |
+          set +e
+          echo "=== Running psiphon for up to 150s (all protocols) ==="
+          timeout 150 ./psiphon \
+            -config config.json \
+            -serverList app/src/main/assets/server_list \
+            -dataRootDirectory ./psidata \
+            > psi.log 2>&1
+          echo "--- last 30 log lines ---"
+          tail -30 psi.log
+          echo "-------------------------"
+          if grep -q '"noticeType":"Tunnels"' psi.log && grep -q '"count":1' psi.log; then
+            echo "RESULT=CONNECTED"
+            echo "::notice::Psiphon CONNECTED on the runner — server list + core are good; the app's only missing piece is a live carrier bug host."
+            exit 0
+          fi
+          if grep -q '"noticeType":"ActiveTunnel"' psi.log; then
+            echo "RESULT=CONNECTED"
+            echo "::notice::Psiphon ActiveTunnel established — server list + core are good."
+            exit 0
+          fi
+          echo "RESULT=NOT_CONNECTED"
+          echo "::warning::Psiphon did NOT connect on the runner within the time limit."
+          # Surface the most relevant diagnostics
+          echo "=== connection-related notices ==="
+          grep -oE '"noticeType":"[A-Za-z]+"' psi.log | sort | uniq -c | sort -rn | head -20 || true
+          exit 1
+
+      - name: Upload psiphon log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: psiphon-connect-log
+          path: psi.log
+          if-no-files-found: warn
