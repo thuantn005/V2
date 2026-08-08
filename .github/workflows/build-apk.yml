@@ -104,7 +104,10 @@ jobs:
               export CGO_ENABLED=1 GOOS=android GOARCH="$goarch"
               export CC="$TC/$cc"
               [ -n "$goarm" ] && export GOARM="$goarm"
-              go build -trimpath -ldflags "-s -w" \
+              # -checklinkname=0: dependency github.com/wlynxg/anet uses
+              # go:linkname against net.zoneCache, which Go 1.23+ rejects by
+              # default. Disable the check so psiphon links on modern toolchains.
+              go build -trimpath -ldflags "-s -w -checklinkname=0" \
                 -o "$GITHUB_WORKSPACE/app/src/main/jniLibs/$abi/libpsiphon.so" .
             )
           }
