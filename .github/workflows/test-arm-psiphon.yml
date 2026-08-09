@@ -1,0 +1,102 @@
+name: Test ARM psiphon
+
+# The user reports both ARM builds (arm64 APK, armv7 Termux) loop "Connecting"
+# forever even on wifi, while every x86_64 test connects in ~9s. This checks the
+# never-verified hypothesis: does the ARM Psiphon binary actually establish a
+# tunnel at all? Runs psiphon (no bug, all protocols, open internet) for
+# linux/amd64 (control) and linux/arm64 + linux/arm (under qemu-user).
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "**" ]
+    paths:
+      - '.github/workflows/test-arm-psiphon.yml'
+
+env:
+  GO_VERSION: "1.22"
+  PSIPHON_REF: "v2.0.31"
+
+jobs:
+  test-arm-psiphon:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Install qemu-user-static
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static
+
+      - name: Build psiphon (amd64, arm64, arm) static
+        run: |
+          set -e
+          git clone --depth 1 --branch "${PSIPHON_REF}" \
+            https://github.com/Psiphon-Labs/psiphon-tunnel-core.git psi
+          cd psi/ConsoleClient
+          for t in "amd64" "arm64" "arm7"; do
+            case "$t" in
+              amd64) goarch=amd64; goarm="";;
+              arm64) goarch=arm64; goarm="";;
+              arm7)  goarch=arm;   goarm=7;;
+            esac
+            echo ">> building psiphon-$t"
+            ( export CGO_ENABLED=0 GOOS=linux GOARCH="$goarch"
+              [ -n "$goarm" ] && export GOARM="$goarm"
+              go build -trimpath -ldflags "-s -w" -o "$GITHUB_WORKSPACE/psiphon-$t" . )
+          done
+          cd "$GITHUB_WORKSPACE"
+          file psiphon-amd64 psiphon-arm64 psiphon-arm7 || true
+          ls -la psiphon-*
+
+      - name: Run each arch (no-bug, all protocols, open internet)
+        run: |
+          set +e
+          cat > cfg.json <<'JSON'
+          {
+            "SponsorId": "0000000000000000",
+            "PropagationChannelId": "0000000000000000",
+            "LocalSocksProxyPort": 1080,
+            "DisableLocalHTTPProxy": true,
+            "EmitDiagnosticNotices": true
+          }
+          JSON
+          run_arch() {
+            name="$1"; runner="$2"; port="$3"
+            sed "s/1080/$port/" cfg.json > "cfg_$name.json"
+            rm -rf "data_$name"; mkdir -p "data_$name"
+            echo "===== [$name] running psiphon-$name for 120s ====="
+            timeout 120 $runner ./psiphon-$name \
+              -config "cfg_$name.json" \
+              -serverList app/src/main/assets/server_list \
+              -dataRootDirectory "$PWD/data_$name" \
+              > "psi_$name.log" 2>&1
+            if grep -q '"noticeType":"Tunnels"' "psi_$name.log" && grep -q '"count":1' "psi_$name.log"; then
+              echo "RESULT[$name]=CONNECTED"
+            elif grep -q '"noticeType":"ActiveTunnel"' "psi_$name.log"; then
+              echo "RESULT[$name]=CONNECTED (ActiveTunnel)"
+            else
+              echo "RESULT[$name]=NOT_CONNECTED"
+            fi
+            echo "--- notice histogram [$name] ---"
+            grep -oE '"noticeType":"[A-Za-z]+"' "psi_$name.log" | sort | uniq -c | sort -rn | head -12
+            echo "--- last 6 lines [$name] ---"; tail -6 "psi_$name.log"
+            echo
+          }
+          run_arch amd64 ""                     1081
+          run_arch arm64 "qemu-aarch64-static"  1082
+          run_arch arm7  "qemu-arm-static"      1083
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: arm-psiphon-logs
+          path: psi_*.log
+          if-no-files-found: warn
