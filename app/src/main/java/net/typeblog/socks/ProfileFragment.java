@@ -297,6 +297,9 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
     private void onConnectClicked() {
         if (mRunning || mStarting) {
             stopVpn();
+        } else if (mStopping) {
+            // Already stopping — ignore the tap instead of kicking off a new
+            // connection on top of a teardown.
         } else {
             startVpn();
         }
@@ -527,7 +530,9 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
 
         final AlertDialog dialog = new AlertDialog.Builder(getActivity())
                 .setTitle(R.string.log_title)
-                .setView(sv)
+                // Disconnect straight from the log view (it auto-opens on
+                // connect and would otherwise cover the power button).
+                .setPositiveButton(R.string.log_disconnect, (d, w) -> stopVpn())
                 .setNegativeButton(R.string.log_close, null)
                 .create();
 
@@ -678,6 +683,7 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
 
     private void startVpn() {
         mStarting = true;
+        mStopping = false;
         mTunnelUp = false;
         Intent i = VpnService.prepare(getActivity());
 
@@ -691,20 +697,32 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
     private void stopVpn() {
         mStopping = true;
         mTunnelUp = false;
+        // Clear the starting flag too, so a press during "connecting" reliably
+        // cancels instead of getting stuck.
+        mStarting = false;
 
+        // Ask the service to stop through the binder when we have one...
         if (mBinder != null) {
             try {
                 mBinder.stop();
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            mBinder = null;
             try {
                 getActivity().unbindService(mConnection);
             } catch (Exception ignored) {
             }
+            mBinder = null;
         }
 
-        checkState();
+        // ...and ALWAYS stop the service outright as a fallback. If the binding
+        // was lost (backgrounded, connect still in progress, etc.) the button
+        // must still kill the engine + VPN, otherwise it "won't stop".
+        try {
+            getActivity().stopService(new Intent(getActivity(), SocksVpnService.class));
+        } catch (Exception ignored) {
+        }
+
+        updateState();
     }
 }

@@ -167,9 +167,9 @@ public class Profile {
 
     public int getBfCores() {
         try {
-            return Integer.parseInt(mPref.getString(key("bf_cores"), "2"));
+            return Integer.parseInt(mPref.getString(key("bf_cores"), "3"));
         } catch (Exception e) {
-            return 2;
+            return 3;
         }
     }
 

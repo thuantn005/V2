@@ -191,7 +191,10 @@ public class SocksVpnService extends VpnService {
 
     private void configure(String name, String route, boolean perApp, boolean bypass, String[] apps, boolean ipv6) {
         Builder b = new Builder();
-        b.setMtu(1500)
+        // A large tun MTU lets the local stack hand hev fewer, bigger packets,
+        // cutting per-packet overhead and raising throughput (same trick the
+        // fast sing-box configs use). hev's tunnel mtu below must match.
+        b.setMtu(8500)
                 .setSession(name)
                 .addAddress("26.26.26.1", 24)
                 .addDnsServer("8.8.8.8");
@@ -268,7 +271,7 @@ public class SocksVpnService extends VpnService {
                 .append("  task-stack-size: 20480\n")
                 .append("  log-level: none\n")
                 .append("tunnel:\n")
-                .append("  mtu: 1500\n")
+                .append("  mtu: 8500\n")
                 .append("socks5:\n")
                 .append("  port: ").append(port).append("\n")
                 .append("  address: '").append(server).append("'\n")

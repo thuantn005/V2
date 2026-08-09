@@ -83,7 +83,7 @@ func main() {
 	rotatorPort := env("BF_ROTATOR_PORT", "3080")
 	injectPort := env("BF_INJECT_PORT", "8989")
 	coreName := env("BF_CORE_NAME", "libpsiphon.so")
-	cores := envInt("BF_CORES", 2)
+	cores := envInt("BF_CORES", 3)
 
 	// --- Proxy rotator (the SOCKS5 endpoint tun2socks connects to) ---------
 	ProxyRotator := new(libproxyrotator.ProxyRotator)
