@@ -50,19 +50,24 @@ jobs:
           export BF_CONFIG_HOME="$PWD/home"
           export BF_SERVERLIST="$PWD/server_list"
           export BF_CORE_NAME="libpsiphon.so"
-          export BF_CORES=2
+          export BF_CORES=1
+          export BF_VERBOSE=1
           # No BF_WHITELIST / BF_FRONT (blank bug), no BF_NOBUG. Default state
           # of the shipped app before the user types a bug.
-          echo "=== running blank-bug engine 150s ==="
+          echo "=== running blank-bug engine 150s (verbose) ==="
           timeout 150 ./libbrainfuck > blank.log 2>&1
-          echo "--- injector dial lines (should be NONE / passthrough) ---"
-          grep -a "Connecting to" blank.log | head -5
+          echo "===== generated psiphon config.json ====="
+          find . -name config.json -path "*psiphon*" -exec cat {} \; | head -40
+          echo
           if grep -aq "Connected" blank.log; then
             echo "RESULT=CONNECTED (blank-bug app connects via plain Psiphon)"
           else
             echo "RESULT=NOT_CONNECTED"
           fi
-          echo "--- last 20 lines ---"; tail -20 blank.log
+          echo "--- notice histogram ---"
+          grep -aoE '"noticeType":"[A-Za-z]+"' blank.log | sort | uniq -c | sort -rn | head -15
+          echo "--- meaningful lines (no server-iteration noise) ---"
+          grep -av "completed server entry iteration" blank.log | grep -aiE "error|fail|exit|Connected|Tunnels|proxy|no such|refused|panic" | tail -25
 
       - name: Upload log
         if: always()
