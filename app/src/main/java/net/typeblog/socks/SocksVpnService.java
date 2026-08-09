@@ -118,7 +118,9 @@ public class SocksVpnService extends VpnService {
         // the heavy lifting off the main thread to avoid an ANR.
         new Thread(() -> {
             mEngine = new TunnelEngine(SocksVpnService.this);
-            boolean up = mEngine.start(bfPayload, bfSni, bfRegion, bfCores, bfInjectType, bfProtocols, bfWhitelist, bfFront);
+            boolean noBug = getSharedPreferences("bf_settings", MODE_PRIVATE)
+                    .getBoolean("no_bug", false);
+            boolean up = mEngine.start(bfPayload, bfSni, bfRegion, bfCores, bfInjectType, bfProtocols, bfWhitelist, bfFront, noBug);
             if (!up) {
                 Log.e(TAG, "tunnel engine failed to start");
                 stopMe();

@@ -5,6 +5,11 @@
         android:title="@string/menu_log"/>
 
     <item
+        android:id="@+id/action_nobug"
+        android:checkable="true"
+        android:title="@string/menu_nobug"/>
+
+    <item
         android:id="@+id/prof_add"
         android:title="@string/prof_add"/>
 

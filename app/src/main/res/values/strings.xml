@@ -80,4 +80,8 @@
     <string name="log_refresh">Refresh</string>
     <string name="log_close">Close</string>
 
+    <string name="menu_nobug">Chế độ không bug (test)</string>
+    <string name="nobug_on">Đã BẬT chế độ không bug. Kết nối lại để thử (cần data/wifi thật).</string>
+    <string name="nobug_off">Đã TẮT chế độ không bug. Dùng lại bug host bình thường.</string>
+
 </resources>

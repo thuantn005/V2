@@ -127,9 +127,21 @@ func (p *Psiphon) Start() {
 		propagationChannelId = "0000000000000000"
 	}
 
+	// No-bug mode (BF_NOBUG=1): connect Psiphon straight to its servers without
+	// routing through the local injector, and let it pick any tunnel protocol.
+	// Used to prove the core + server list work when a carrier "bug host" has
+	// died — if this connects but the bugged mode does not, the bug is the fault.
+	noBug := os.Getenv("BF_NOBUG") == "1"
+	upstreamProxyURL := "http://127.0.0.1:" + p.ProxyPort
+	limitProtocols := p.Config.Protocols
+	if noBug {
+		upstreamProxyURL = ""
+		limitProtocols = nil
+	}
+
 	PsiphonData := &Data{
 		MigrateDataStoreDirectory: ConfigPathPsiphon + "/data/" + strconv.Itoa(p.ListenPort),
-		UpstreamProxyURL:          "http://127.0.0.1:" + p.ProxyPort,
+		UpstreamProxyURL:          upstreamProxyURL,
 		LocalSocksProxyPort:       p.ListenPort,
 		SponsorId:                 sponsorId,
 		PropagationChannelId:      propagationChannelId,
@@ -139,7 +151,7 @@ func (p *Psiphon) Start() {
 		EgressRegion:              strings.ToUpper(p.Config.Region),
 		TunnelPoolSize:            p.Config.Tunnel,
 		ConnectionWorkerPoolSize:  p.Config.TunnelWorkers,
-		LimitTunnelProtocols:      p.Config.Protocols,
+		LimitTunnelProtocols:      limitProtocols,
 		Authorizations:            p.GetAuthorizations(),
 	}
 

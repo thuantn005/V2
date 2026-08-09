@@ -79,7 +79,8 @@ public class TunnelEngine {
      * @return true if the engine process started and the SOCKS port came up
      */
     public boolean start(String payload, String sni, String region, int cores,
-                         int injectType, String protocols, String whitelist, String front) {
+                         int injectType, String protocols, String whitelist, String front,
+                         boolean noBug) {
         String bin = mContext.getApplicationInfo().nativeLibraryDir + "/libbrainfuck.so";
         if (!new File(bin).exists()) {
             Log.e(TAG, "engine binary missing: " + bin);
@@ -130,6 +131,12 @@ public class TunnelEngine {
         }
         if (front != null && !front.isEmpty()) {
             env.put("BF_FRONT", front);
+        }
+        // No-bug diagnostic mode: connect Psiphon straight to its servers,
+        // bypassing the bug-host injector. If this connects but the normal
+        // (bugged) mode does not, the carrier bug host has died.
+        if (noBug) {
+            env.put("BF_NOBUG", "1");
         }
 
         try {

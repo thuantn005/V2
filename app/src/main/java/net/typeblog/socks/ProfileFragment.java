@@ -143,6 +143,16 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
         inflater.inflate(R.menu.main, menu);
+        MenuItem nobug = menu.findItem(R.id.action_nobug);
+        if (nobug != null) {
+            nobug.setChecked(isNoBug());
+        }
+    }
+
+    private boolean isNoBug() {
+        return getActivity()
+                .getSharedPreferences("bf_settings", Activity.MODE_PRIVATE)
+                .getBoolean("no_bug", false);
     }
 
     @Override
@@ -156,6 +166,15 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
             return true;
         } else if (id == R.id.action_log) {
             showLog();
+            return true;
+        } else if (id == R.id.action_nobug) {
+            boolean next = !isNoBug();
+            getActivity().getSharedPreferences("bf_settings", Activity.MODE_PRIVATE)
+                    .edit().putBoolean("no_bug", next).apply();
+            item.setChecked(next);
+            Toast.makeText(getActivity(),
+                    next ? R.string.nobug_on : R.string.nobug_off,
+                    Toast.LENGTH_SHORT).show();
             return true;
         } else {
             return super.onOptionsItemSelected(item);
