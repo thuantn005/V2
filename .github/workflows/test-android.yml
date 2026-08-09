@@ -70,28 +70,7 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           disable-animations: true
-          script: |
-            set +e
-            adb push psi_android /data/local/tmp/psi
-            adb push config.json /data/local/tmp/config.json
-            adb push app/src/main/assets/server_list /data/local/tmp/server_list
-            adb shell chmod 755 /data/local/tmp/psi
-            echo "=== running android psiphon binary for 150s ==="
-            adb shell "cd /data/local/tmp && mkdir -p d && timeout 150 ./psi -config config.json -serverList server_list -dataRootDirectory /data/local/tmp/d > psi.log 2>&1"
-            adb pull /data/local/tmp/psi.log psi.log
-            echo "--- last 40 lines ---"
-            tail -40 psi.log
-            echo "--- notice type counts ---"
-            grep -oE '"noticeType":"[A-Za-z]+"' psi.log | sort | uniq -c | sort -rn | head
-            echo "--- errors / denied / EOF ---"
-            grep -iE 'error|denied|EOF|failed' psi.log | tail -25
-            if grep -q '"noticeType":"Tunnels"' psi.log && grep -q '"count":1' psi.log; then
-              echo "RESULT=ANDROID_CONNECTED"
-            elif grep -q '"noticeType":"ActiveTunnel"' psi.log; then
-              echo "RESULT=ANDROID_CONNECTED"
-            else
-              echo "RESULT=ANDROID_NOT_CONNECTED"
-            fi
+          script: bash "$GITHUB_WORKSPACE/.github/scripts/android_test.sh"
 
       - name: Upload android psiphon log
         if: always()
