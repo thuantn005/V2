@@ -47,8 +47,9 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
     private ProfileManager mManager;
     private Profile mProfile;
 
-    private Button mConnectButton;
-    private TextView mStatusText;
+    private View mPowerButton;
+    private TextView mStatusText, mDuration, mDown, mUp;
+    private long mConnectTime = 0L;
     private final Handler mHandler = new Handler(Looper.getMainLooper());
     private boolean mRunning = false;
     private boolean mTunnelUp = false;
@@ -106,13 +107,18 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
 
         LinearLayout root = new LinearLayout(getActivity());
         root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackgroundColor(0xFF0B0B0D);
 
-        View header = inflater.inflate(R.layout.connect_header, root, false);
+        View header = inflater.inflate(R.layout.home, root, false);
         mStatusText = header.findViewById(R.id.txt_status);
-        mConnectButton = header.findViewById(R.id.btn_connect);
-        mConnectButton.setOnClickListener(v -> onConnectClicked());
+        mDuration = header.findViewById(R.id.txt_duration);
+        mDown = header.findViewById(R.id.txt_down);
+        mUp = header.findViewById(R.id.txt_up);
+        mPowerButton = header.findViewById(R.id.btn_power);
+        mPowerButton.setOnClickListener(v -> onConnectClicked());
         root.addView(header);
 
+        prefView.setBackgroundColor(0xFF0B0B0D);
         prefView.setLayoutParams(new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
         root.addView(prefView);
@@ -540,7 +546,7 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
     }
 
     private void updateState() {
-        if (mConnectButton == null || mStatusText == null) {
+        if (mPowerButton == null || mStatusText == null) {
             return;
         }
 
@@ -562,34 +568,62 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
 
         String status;
         int color;
-        String button;
+        int ring;
 
         if (mStarting && !mRunning) {
             status = getString(R.string.state_starting);
-            color = 0xFFF0A000;
-            button = getString(R.string.action_cancel);
+            color = 0xFFF5A623;
+            ring = R.drawable.power_ring_connecting;
         } else if (mRunning) {
             if (mTunnelUp) {
                 status = getString(R.string.state_connected);
-                color = 0xFF2E9E44;
+                color = 0xFF22E06B;
+                ring = R.drawable.power_ring_on;
             } else {
                 status = getString(R.string.state_connecting);
-                color = 0xFFF0A000;
+                color = 0xFFF5A623;
+                ring = R.drawable.power_ring_connecting;
             }
-            button = getString(R.string.action_disconnect);
         } else if (mStopping) {
             status = getString(R.string.state_stopping);
-            color = 0xFFF0A000;
-            button = getString(R.string.action_connect);
+            color = 0xFFF5A623;
+            ring = R.drawable.power_ring_connecting;
         } else {
             status = getString(R.string.state_off);
-            color = 0xFF888888;
-            button = getString(R.string.action_connect);
+            color = 0xFF8A8A90;
+            ring = R.drawable.power_ring_off;
         }
 
         mStatusText.setText(status);
         mStatusText.setTextColor(color);
-        mConnectButton.setText(button);
+        mPowerButton.setBackgroundResource(ring);
+
+        // Duration timer, running from the moment the tunnel is up.
+        boolean connected = mRunning && mTunnelUp;
+        if (connected) {
+            if (mConnectTime == 0L) {
+                mConnectTime = java.lang.System.currentTimeMillis();
+            }
+        } else {
+            mConnectTime = 0L;
+        }
+        if (mDuration != null) {
+            if (mConnectTime > 0L) {
+                long s = (java.lang.System.currentTimeMillis() - mConnectTime) / 1000L;
+                mDuration.setText(String.format(Locale.US, "%02d:%02d:%02d",
+                        s / 3600, (s % 3600) / 60, s % 60));
+            } else {
+                mDuration.setText("00:00:00");
+            }
+        }
+
+        // Traffic counters (this app's UID = the engine's real tunnel traffic).
+        if (mDown != null && mUp != null) {
+            long rx = android.net.TrafficStats.getUidRxBytes(android.os.Process.myUid());
+            long tx = android.net.TrafficStats.getUidTxBytes(android.os.Process.myUid());
+            mDown.setText("↓ " + humanBytes(rx));
+            mUp.setText("↑ " + humanBytes(tx));
+        }
 
         if (mStarting && mRunning) {
             mStarting = false;
@@ -597,6 +631,21 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
         if (mStopping && !mRunning) {
             mStopping = false;
         }
+    }
+
+    private static String humanBytes(long b) {
+        if (b < 1024) {
+            return b + " B";
+        }
+        double kb = b / 1024.0;
+        if (kb < 1024) {
+            return String.format(Locale.US, "%.1f KB", kb);
+        }
+        double mb = kb / 1024.0;
+        if (mb < 1024) {
+            return String.format(Locale.US, "%.1f MB", mb);
+        }
+        return String.format(Locale.US, "%.2f GB", mb / 1024.0);
     }
 
     private void startVpn() {
