@@ -63,7 +63,7 @@ jobs:
           export BF_CORE_NAME="libpsiphon.so"
           export BF_CORES=2
           export BF_INJECT_TYPE=2
-          export BF_WHITELIST="akamai.net:80"
+          export BF_WHITELIST="akamai.net:443"
           export BF_FRONT="125.235.36.177"
           export BF_REGION="SG"
           echo "=== running engine (thuan567 params) for 150s ==="
