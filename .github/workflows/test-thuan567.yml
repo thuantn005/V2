@@ -64,7 +64,7 @@ jobs:
           export BF_CORES=2
           export BF_INJECT_TYPE=2
           export BF_WHITELIST="akamai.net:443"
-          export BF_FRONT="125.235.36.177"
+          export BF_FRONT="125.235.36.177:443"
           export BF_REGION="SG"
           echo "=== running engine (thuan567 params) for 150s ==="
           timeout 150 ./libbrainfuck > t567.log 2>&1
