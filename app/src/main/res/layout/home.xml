@@ -91,4 +91,32 @@
         android:gravity="center"
         android:paddingTop="6dp"/>
 
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/menu_log"
+        android:textColor="#8A8A90"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:paddingTop="14dp"
+        android:paddingBottom="4dp"/>
+
+    <ScrollView
+        android:id="@+id/log_scroll"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:background="#0E0E12"
+        android:padding="8dp">
+
+        <TextView
+            android:id="@+id/txt_log"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#E6E6E6"
+            android:textSize="10sp"
+            android:fontFamily="monospace"
+            android:textIsSelectable="true"/>
+
+    </ScrollView>
+
 </LinearLayout>

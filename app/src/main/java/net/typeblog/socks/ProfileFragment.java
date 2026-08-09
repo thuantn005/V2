@@ -48,7 +48,8 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
     private Profile mProfile;
 
     private View mPowerButton;
-    private TextView mStatusText, mDuration, mDown, mUp;
+    private TextView mStatusText, mDuration, mDown, mUp, mLogView;
+    private ScrollView mLogScroll;
     private long mConnectTime = 0L;
     private final Handler mHandler = new Handler(Looper.getMainLooper());
     private boolean mRunning = false;
@@ -79,6 +80,7 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
         @Override
         public void run() {
             updateState();
+            updateInlineLog();
             mHandler.postDelayed(this, 1000);
         }
     };
@@ -116,6 +118,8 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
         mUp = header.findViewById(R.id.txt_up);
         mPowerButton = header.findViewById(R.id.btn_power);
         mPowerButton.setOnClickListener(v -> onConnectClicked());
+        mLogScroll = header.findViewById(R.id.log_scroll);
+        mLogView = header.findViewById(R.id.txt_log);
         root.addView(header);
 
         prefView.setBackgroundColor(0xFF0B0B0D);
@@ -312,9 +316,21 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
         if (resultCode == Activity.RESULT_OK) {
             Utility.startVpn(getActivity(), mProfile);
             checkState();
-            // Pop the live log right away so the user watches the connection
-            // progress on screen without opening the menu.
-            showLog();
+            // Log now shows inline under the power button (updateInlineLog), so
+            // no pop-up dialog is opened here.
+        }
+    }
+
+    /** Refresh the inline log panel shown under the power button and keep it
+     *  scrolled to the newest line. */
+    private void updateInlineLog() {
+        if (mLogView == null || mLogScroll == null) {
+            return;
+        }
+        String text = readLog();
+        if (!text.equals(mLogView.getText().toString())) {
+            mLogView.setText(text);
+            mLogScroll.post(() -> mLogScroll.fullScroll(ScrollView.FOCUS_DOWN));
         }
     }
 
@@ -505,14 +521,24 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
         if (!f.exists() || f.length() == 0) {
             return getString(R.string.log_empty);
         }
-        StringBuilder sb = new StringBuilder();
+        // Keep only the last N lines so refreshing the live panel every second
+        // stays cheap even when the engine log grows large.
+        java.util.ArrayDeque<String> tail = new java.util.ArrayDeque<>();
+        final int MAX = 200;
         try (BufferedReader r = new BufferedReader(new FileReader(f))) {
             String line;
             while ((line = r.readLine()) != null) {
-                sb.append(line).append('\n');
+                tail.addLast(line);
+                if (tail.size() > MAX) {
+                    tail.removeFirst();
+                }
             }
         } catch (Exception e) {
             return "Error reading log: " + e.getMessage();
+        }
+        StringBuilder sb = new StringBuilder();
+        for (String l : tail) {
+            sb.append(l).append('\n');
         }
         // The Go engine emits ANSI colour codes; strip them for readability.
         return sb.toString().replaceAll("\\[[;\\d]*m", "");
