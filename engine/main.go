@@ -135,6 +135,10 @@ func main() {
 		}
 	} else {
 		Inject.Config.Rules = map[string][]string{}
+		// No bug configured: connect Psiphon straight to its servers instead of
+		// routing it through the (empty-rule) injector, which would just fail.
+		// Same effect as BF_NOBUG=1.
+		os.Setenv("BF_NOBUG", "1")
 	}
 
 	go ProxyRotator.Start()
