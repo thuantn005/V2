@@ -1,31 +1,33 @@
 #!/usr/bin/env bash
-# Runs inside the reactivecircus emulator step (on the runner, with adb access
-# to the booted emulator). Pushes the android psiphon binary + server list into
-# the emulator, runs it for 150s on open internet, and reports whether a tunnel
-# was established. Always exits 0 so the timeout's exit code 124 does not fail
-# the step before the analysis runs.
+# Runs inside the reactivecircus emulator step. Pushes the FULL engine
+# (libbrainfuck injector/rotator + libpsiphon.so core) into the emulator and
+# runs it exactly as the app does — FRONTED-MEEK forced through the injector to
+# the Viettel bug IP 125.235.36.177 — to see whether the bug path establishes a
+# tunnel in a real Android environment on open internet. Always exits 0.
 set +e
 
-adb push psi_android /data/local/tmp/psi
-adb push config.json /data/local/tmp/config.json
+adb push libbrainfuck /data/local/tmp/libbrainfuck
+adb push libpsiphon.so /data/local/tmp/libpsiphon.so
 adb push app/src/main/assets/server_list /data/local/tmp/server_list
-adb shell chmod 755 /data/local/tmp/psi
+adb shell chmod 755 /data/local/tmp/libbrainfuck /data/local/tmp/libpsiphon.so
 
-echo "=== running android psiphon binary for 150s ==="
-adb shell "cd /data/local/tmp && mkdir -p d && timeout 150 ./psi -config config.json -serverList server_list -dataRootDirectory /data/local/tmp/d > psi.log 2>&1"
+echo "=== running full engine (injector + bug + FRONTED-MEEK) for 150s ==="
+adb shell "cd /data/local/tmp && HOME=/data/local/tmp BF_CONFIG_HOME=/data/local/tmp BF_SERVERLIST=/data/local/tmp/server_list BF_CORE_NAME=libpsiphon.so BF_CORES=1 timeout 150 ./libbrainfuck > bug.log 2>&1"
 
-adb pull /data/local/tmp/psi.log psi.log 2>/dev/null
+adb pull /data/local/tmp/bug.log bug.log 2>/dev/null
+# strip ANSI colour codes for readability
+sed -i 's/\x1b\[[0-9;]*[A-Za-z]//g' bug.log 2>/dev/null
 
-echo "--- last 45 lines ---"
-tail -45 psi.log
-echo "--- noticeType counts ---"
-grep -oE '"noticeType":"[A-Za-z]+"' psi.log | sort | uniq -c | sort -rn | head -20
-echo "--- errors / denied / EOF / failed ---"
-grep -iE 'error|denied|EOF|failed|reject|refused|timeout' psi.log | tail -30
+echo "--- injector activity (bug path exercised) ---"
+grep -a "Connecting to 125.235.36.177" bug.log | head -6
+echo "--- last 40 lines ---"
+tail -40 bug.log
+echo "--- errors / EOF / failed ---"
+grep -aiE 'error|EOF|failed|denied|refused|blocked' bug.log | tail -25
 
-if grep -q '"count":1' psi.log || grep -q '"noticeType":"ActiveTunnel"' psi.log; then
-  echo "RESULT=ANDROID_CONNECTED"
+if grep -aq "Connected" bug.log; then
+  echo "RESULT=ANDROID_BUG_WORKS"
 else
-  echo "RESULT=ANDROID_NOT_CONNECTED"
+  echo "RESULT=ANDROID_BUG_FAILED"
 fi
 exit 0

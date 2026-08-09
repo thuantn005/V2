@@ -32,29 +32,24 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Build psiphon for android/x86_64
+      - name: Build engine + psiphon for android/x86_64
         run: |
           set -e
           NDK="$ANDROID_SDK_ROOT/ndk/${NDK_VERSION}"
           [ -d "$NDK" ] || (yes | sdkmanager "ndk;${NDK_VERSION}" >/dev/null)
           TC="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          CC="$TC/x86_64-linux-android${ANDROID_API}-clang"
+          # Full engine (injector + rotator), exactly as the app runs it.
+          ( cd engine && \
+            GOFLAGS=-mod=vendor CGO_ENABLED=1 GOOS=android GOARCH=amd64 CC="$CC" \
+            go build -trimpath -ldflags "-s -w" -o "$GITHUB_WORKSPACE/libbrainfuck" . )
+          # Psiphon core, named as the engine expects it.
           git clone --depth 1 --branch "${PSIPHON_REF}" \
             https://github.com/Psiphon-Labs/psiphon-tunnel-core.git psi
           ( cd psi/ConsoleClient && \
-            CGO_ENABLED=1 GOOS=android GOARCH=amd64 \
-            CC="$TC/x86_64-linux-android${ANDROID_API}-clang" \
-            go build -trimpath -ldflags "-s -w" -o "$GITHUB_WORKSPACE/psi_android" . )
-          file psi_android
-          cat > config.json <<'JSON'
-          {
-            "SponsorId": "0000000000000000",
-            "PropagationChannelId": "0000000000000000",
-            "LocalSocksProxyPort": 1080,
-            "DisableLocalHTTPProxy": true,
-            "EmitDiagnosticNotices": true,
-            "EmitBytesTransferred": true
-          }
-          JSON
+            CGO_ENABLED=1 GOOS=android GOARCH=amd64 CC="$CC" \
+            go build -trimpath -ldflags "-s -w" -o "$GITHUB_WORKSPACE/libpsiphon.so" . )
+          file libbrainfuck libpsiphon.so
 
       - name: Enable KVM
         run: |
