@@ -309,6 +309,9 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
         if (resultCode == Activity.RESULT_OK) {
             Utility.startVpn(getActivity(), mProfile);
             checkState();
+            // Pop the live log right away so the user watches the connection
+            // progress on screen without opening the menu.
+            showLog();
         }
     }
 
@@ -525,15 +528,21 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
         final AlertDialog dialog = new AlertDialog.Builder(getActivity())
                 .setTitle(R.string.log_title)
                 .setView(sv)
-                .setPositiveButton(R.string.log_refresh, null)
                 .setNegativeButton(R.string.log_close, null)
                 .create();
 
-        dialog.setOnShowListener(d ->
-                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-                    tv.setText(readLog());
-                    sv.post(() -> sv.fullScroll(ScrollView.FOCUS_DOWN));
-                }));
+        // Live tail: re-read the log every second and keep it scrolled to the
+        // bottom, so it updates on its own with no button to press.
+        final Runnable refresh = new Runnable() {
+            @Override
+            public void run() {
+                tv.setText(readLog());
+                sv.post(() -> sv.fullScroll(ScrollView.FOCUS_DOWN));
+                mHandler.postDelayed(this, 1000);
+            }
+        };
+        dialog.setOnShowListener(d -> mHandler.post(refresh));
+        dialog.setOnDismissListener(d -> mHandler.removeCallbacks(refresh));
 
         dialog.show();
         sv.post(() -> sv.fullScroll(ScrollView.FOCUS_DOWN));
