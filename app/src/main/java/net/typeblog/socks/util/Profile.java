@@ -201,7 +201,9 @@ public class Profile {
     // host/IP to dial instead ("bug host"). Defaults reproduce a known-working
     // Viettel (VN) setup.
     public String getBfWhitelist() {
-        return mPref.getString(key("bf_whitelist"), "akamai.net");
+        // Blank by default: the user enters their own live bug host. The old
+        // akamai.net/125.235.36.177 default is dead (Viettel now returns 404).
+        return mPref.getString(key("bf_whitelist"), "");
     }
 
     public void setBfWhitelist(String v) {
@@ -209,7 +211,7 @@ public class Profile {
     }
 
     public String getBfFront() {
-        return mPref.getString(key("bf_front"), "125.235.36.177");
+        return mPref.getString(key("bf_front"), "");
     }
 
     public void setBfFront(String v) {

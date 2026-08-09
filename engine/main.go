@@ -113,21 +113,28 @@ func main() {
 	// used. If it is host-only (e.g. "akamai.net") we bug BOTH meek ports —
 	// 80 (FRONTED-MEEK-HTTP-OSSH) and 443 (FRONTED-MEEK-OSSH) — to the bug on
 	// the matching port, so servers fronting on 443 are not dropped.
-	whitelist := env("BF_WHITELIST", "akamai.net")
-	front := env("BF_FRONT", "125.235.36.177")
-	if strings.Contains(whitelist, ":") {
-		Inject.Config.Rules = map[string][]string{
-			whitelist: strings.Split(front, ","),
+	// Bug host is user-supplied and blank by default. Only build injection rules
+	// when BOTH the fronted host and the bug IP are given; otherwise inject
+	// nothing (Psiphon connects normally, no carrier bug).
+	whitelist := os.Getenv("BF_WHITELIST")
+	front := os.Getenv("BF_FRONT")
+	if whitelist != "" && front != "" {
+		if strings.Contains(whitelist, ":") {
+			Inject.Config.Rules = map[string][]string{
+				whitelist: strings.Split(front, ","),
+			}
+		} else {
+			bug := front
+			if strings.Contains(bug, ":") {
+				bug = strings.SplitN(bug, ":", 2)[0]
+			}
+			Inject.Config.Rules = map[string][]string{
+				whitelist + ":80":  {bug + ":80"},
+				whitelist + ":443": {bug + ":443"},
+			}
 		}
 	} else {
-		bug := front
-		if strings.Contains(bug, ":") {
-			bug = strings.SplitN(bug, ":", 2)[0]
-		}
-		Inject.Config.Rules = map[string][]string{
-			whitelist + ":80":  {bug + ":80"},
-			whitelist + ":443": {bug + ":443"},
-		}
+		Inject.Config.Rules = map[string][]string{}
 	}
 
 	go ProxyRotator.Start()

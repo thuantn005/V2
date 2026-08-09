@@ -15,9 +15,9 @@
     <string name="bf_region_sum">Two-letter Psiphon region code (e.g. sg, jp, us). Leave empty for automatic.</string>
     <string name="bf_inject_type">Injection Method</string>
     <string name="bf_whitelist">Whitelist (front host)</string>
-    <string name="bf_whitelist_sum">Fronted host to intercept. Host only (e.g. akamai.net) bugs BOTH port 80 and 443; add a port (akamai.net:80) for a single port. Requires Injection Method = Payload / SNI rewrite.</string>
+    <string name="bf_whitelist_sum">Enter YOUR live bug host here (blank = no bug). Host only (e.g. host.com) bugs BOTH port 80 and 443; add a port (host.com:443) for one port. Requires Injection Method = Payload / SNI rewrite. Both this and Bug Host / IP must be filled for the bug to apply.</string>
     <string name="bf_front">Bug Host / IP</string>
-    <string name="bf_front_sum">The real host or IP to dial instead (the carrier "bug"), e.g. 125.235.36.177. Comma-separate several to rotate.</string>
+    <string name="bf_front_sum">Enter the real host or IP to dial instead (the carrier "bug"). Blank = no bug. Comma-separate several to rotate.</string>
     <string name="bf_cores">Tunnel Count</string>
     <string name="bf_cores_sum">Number of parallel Psiphon tunnels (default 2).</string>
     <string name="bf_protocols">Tunnel Protocols</string>
