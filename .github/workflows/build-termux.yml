@@ -1,0 +1,86 @@
+name: Build Termux Bundle
+
+# Produces ready-to-run Termux bundles (arm64 + armv7): the engine + the pinned
+# Psiphon core + the 443-entry server list + a run script, all preconfigured
+# with the Viettel bug defaults. Download, unzip in Termux, run ./run.sh.
+
+on:
+  push:
+    branches: [ "**" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  GO_VERSION: "1.22"
+  PSIPHON_REF: "v2.0.31"
+  ANDROID_API: "24"
+  NDK_VERSION: "26.3.11579264"
+
+jobs:
+  build-termux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build bundles
+        run: |
+          set -e
+          NDK="$ANDROID_SDK_ROOT/ndk/${NDK_VERSION}"
+          [ -d "$NDK" ] || (yes | sdkmanager "ndk;${NDK_VERSION}" >/dev/null)
+          TC="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          API="${ANDROID_API}"
+
+          git clone --depth 1 --branch "${PSIPHON_REF}" \
+            https://github.com/Psiphon-Labs/psiphon-tunnel-core.git psi
+
+          make_bundle() {
+            abi="$1"; goarch="$2"; cc="$3"; goarm="$4"
+            echo ">> building $abi"
+            out="bundle-$abi"
+            mkdir -p "$out"
+            # engine
+            ( cd engine && \
+              GOFLAGS=-mod=vendor CGO_ENABLED=1 GOOS=android GOARCH="$goarch" ${goarm:+GOARM=$goarm} \
+              CC="$TC/$cc" go build -trimpath -ldflags "-s -w" -o "$GITHUB_WORKSPACE/$out/brainfuck" . )
+            # psiphon core
+            ( cd psi/ConsoleClient && \
+              CGO_ENABLED=1 GOOS=android GOARCH="$goarch" ${goarm:+GOARM=$goarm} \
+              CC="$TC/$cc" go build -trimpath -ldflags "-s -w" -o "$GITHUB_WORKSPACE/$out/psiphon-tunnel-core" . )
+            cp app/src/main/assets/server_list "$out/server_list"
+            cp termux/run.sh "$out/run.sh"
+            cp termux/README.txt "$out/README.txt"
+            chmod +x "$out/run.sh" "$out/brainfuck" "$out/psiphon-tunnel-core"
+
+            ( cd "$out" && zip -qr "$GITHUB_WORKSPACE/brainfuck-termux-$abi.zip" . )
+            echo "packaged brainfuck-termux-$abi.zip"
+          }
+
+          make_bundle arm64 arm64 "aarch64-linux-android${API}-clang"    ""
+          make_bundle armv7 arm   "armv7a-linux-androideabi${API}-clang" "7"
+          ls -la brainfuck-termux-*.zip
+
+      - name: Publish Termux bundles to release
+        if: success()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: termux-latest
+          name: Brainfuck-Psiphon Termux bundle (latest)
+          body: |
+            Ready-to-run Termux bundles (engine + Psiphon v2.0.31 + 443 servers +
+            run script, preconfigured with the Viettel bug). Build #${{ github.run_number }}.
+
+            arm64 for most phones; armv7 for older 32-bit devices.
+            Unzip in Termux and run ./run.sh — wait ~1-2 min for "Connected".
+          files: brainfuck-termux-*.zip
+          fail_on_unmatched_files: true
