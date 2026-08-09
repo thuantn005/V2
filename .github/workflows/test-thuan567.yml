@@ -1,0 +1,92 @@
+name: Test thuan567 config
+
+# Runs the FULL engine on the GitHub runner with the EXACT bug parameters from
+# thuan567/v2's config.json:
+#   - Inject rule: akamai.net:80 -> 125.235.36.177 (HTTP-MEEK, port 80 only)
+#   - Psiphon egress region: SG
+#   - Inject Type 2, FRONTED-MEEK protocols
+#
+# What the result means:
+#   - CONNECTED -> the bug endpoint (125.235.36.177:80) + server list are still
+#     ALIVE and psiphon can meek through them. The config itself is not dead.
+#     (It does NOT prove the bug still gives FREE data on a Viettel SIM — that
+#     zero-rating can only be verified on the carrier network with 0 balance.)
+#   - NOT CONNECTED -> the endpoint/server list is dead everywhere, so it cannot
+#     work on the phone either. The config needs a fresh bug.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "**" ]
+    paths:
+      - '.github/workflows/test-thuan567.yml'
+
+env:
+  GO_VERSION: "1.22"
+  PSIPHON_REF: "v2.0.31"
+
+jobs:
+  test-thuan567:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build engine + psiphon (host)
+        run: |
+          set -e
+          mkdir -p run
+          ( cd engine && \
+            GOFLAGS=-mod=vendor CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+            go build -trimpath -ldflags "-s -w" -o "$GITHUB_WORKSPACE/run/libbrainfuck" . )
+          git clone --depth 1 --branch "${PSIPHON_REF}" \
+            https://github.com/Psiphon-Labs/psiphon-tunnel-core.git psi
+          ( cd psi/ConsoleClient && \
+            CGO_ENABLED=1 go build -trimpath -ldflags "-s -w" \
+            -o "$GITHUB_WORKSPACE/run/libpsiphon.so" . )
+          cp app/src/main/assets/server_list run/server_list
+          ls -la run
+
+      - name: Run engine with thuan567's exact bug (akamai.net:80 -> IP, region SG)
+        run: |
+          set +e
+          cd run
+          mkdir -p home
+          export HOME="$PWD/home"
+          export BF_CONFIG_HOME="$PWD/home"
+          export BF_SERVERLIST="$PWD/server_list"
+          export BF_CORE_NAME="libpsiphon.so"
+          export BF_CORES=2
+          export BF_INJECT_TYPE=2
+          export BF_WHITELIST="akamai.net:80"
+          export BF_FRONT="125.235.36.177"
+          export BF_REGION="SG"
+          echo "=== running engine (thuan567 params) for 150s ==="
+          timeout 150 ./libbrainfuck > t567.log 2>&1
+          echo "--- injector dialed the bug IP? ---"
+          grep -a "Connecting to 125.235.36.177" t567.log | head -8
+          echo "--- tunnel status ---"
+          if grep -aq "Connected" t567.log; then
+            echo "RESULT=CONNECTED (thuan567 bug endpoint + server list are ALIVE)"
+            echo "::notice::thuan567 config CONNECTED on the runner — endpoint/serverlist alive. Bug may still work on a Viettel SIM; verify on the carrier network."
+          else
+            echo "RESULT=NOT_CONNECTED (endpoint/serverlist dead from open internet too)"
+            echo "::warning::thuan567 config did NOT connect on the runner — the bug/serverlist is dead, needs refreshing."
+          fi
+          echo "--- notice-type histogram ---"
+          grep -aoE '"noticeType":"[A-Za-z]+"' t567.log | sort | uniq -c | sort -rn | head -20
+          echo "--- last 25 lines ---"
+          tail -25 t567.log
+
+      - name: Upload log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: thuan567-log
+          path: run/t567.log
+          if-no-files-found: warn
