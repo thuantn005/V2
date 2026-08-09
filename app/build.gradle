@@ -3,6 +3,7 @@ apply plugin: 'com.android.application'
 android {
     namespace 'net.typeblog.socks'
     compileSdk 34
+    ndkVersion "26.3.11579264"
 
     defaultConfig {
         applicationId "net.typeblog.socks"
@@ -10,6 +11,29 @@ android {
         targetSdkVersion 34
         versionCode 20
         versionName "2.0"
+
+        // The tun2socks core (hev-socks5-tunnel) is built from source via
+        // ndk-build; restrict to the ABIs we ship prebuilt engine libs for.
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86_64'
+        }
+        externalNativeBuild {
+            ndkBuild {
+                // hev-socks5-tunnel's JNI (src/hev-jni.c) registers its native
+                // methods on the class named by these macros — must match
+                // net.typeblog.socks.HevTunnel. Passed here (not just via
+                // Application.mk) because AGP drives ndk-build with its own flags.
+                cFlags '-DPKGNAME=net/typeblog/socks', '-DCLSNAME=HevTunnel'
+                // Build only the shared library; skip hev's standalone executable.
+                targets 'hev-socks5-tunnel'
+            }
+        }
+    }
+
+    externalNativeBuild {
+        ndkBuild {
+            path 'src/main/jni/Android.mk'
+        }
     }
 
     compileOptions {

@@ -37,6 +37,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # hev-socks5-tunnel (the tun2socks core) and its own nested submodules
+          # live under app/src/main/jni and are built from source by ndk-build.
+          submodules: recursive
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
