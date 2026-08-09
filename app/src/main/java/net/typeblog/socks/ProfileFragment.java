@@ -522,10 +522,18 @@ public class ProfileFragment extends PreferenceFragment implements Preference.On
         final TextView tv = new TextView(getActivity());
         tv.setText(readLog());
         tv.setTextSize(11);
-        tv.setPadding(24, 24, 24, 24);
+        tv.setPadding(28, 24, 28, 24);
         tv.setTextIsSelectable(true);
+        // The app theme is dark; without an explicit light text colour the log
+        // is invisible (looks like an empty dimmed window). Force readable
+        // colours + a monospace font.
+        tv.setTextColor(0xFFE6E6E6);
+        tv.setTypeface(android.graphics.Typeface.MONOSPACE);
 
         final ScrollView sv = new ScrollView(getActivity());
+        sv.setBackgroundColor(0xFF0E0E12);
+        float density = getResources().getDisplayMetrics().density;
+        sv.setMinimumHeight((int) (360 * density));
         sv.addView(tv);
 
         final AlertDialog dialog = new AlertDialog.Builder(getActivity())
