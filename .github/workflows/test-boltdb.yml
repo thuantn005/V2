@@ -1,0 +1,92 @@
+name: Test thuan567 boltdb
+
+# "thử thay boltdb": instead of our -serverList, seed Psiphon's datastore from
+# thuan567/v2's prebuilt psiphon.boltdb and see whether that changes anything.
+# Runs the full engine twice with the bug on 443 (akamai.net -> 125.235.36.177):
+#   - region SG   (thuan567's pinned region, which failed with our server_list)
+#   - region auto (empty)
+# CONNECTED in either case tells us the boltdb carries usable server entries.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "**" ]
+    paths:
+      - '.github/workflows/test-boltdb.yml'
+
+env:
+  GO_VERSION: "1.22"
+  PSIPHON_REF: "v2.0.31"
+
+jobs:
+  test-boltdb:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build engine + psiphon (host)
+        run: |
+          set -e
+          mkdir -p run
+          ( cd engine && \
+            GOFLAGS=-mod=vendor CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+            go build -trimpath -ldflags "-s -w" -o "$GITHUB_WORKSPACE/run/libbrainfuck" . )
+          git clone --depth 1 --branch "${PSIPHON_REF}" \
+            https://github.com/Psiphon-Labs/psiphon-tunnel-core.git psi
+          ( cd psi/ConsoleClient && \
+            CGO_ENABLED=1 go build -trimpath -ldflags "-s -w" \
+            -o "$GITHUB_WORKSPACE/run/libpsiphon.so" . )
+
+      - name: Fetch thuan567 boltdb
+        run: |
+          set -e
+          git clone --depth 1 https://github.com/thuan567/v2 t567
+          unzip -o -q t567/v2.zip -d t567x
+          BOLT=$(find t567x -name psiphon.boltdb | head -1)
+          echo "boltdb: $BOLT ($(du -h "$BOLT" | cut -f1))"
+          cp "$BOLT" "$GITHUB_WORKSPACE/run/seed.boltdb"
+          ls -la run/seed.boltdb
+
+      - name: Run engine seeded from boltdb (region SG, then auto)
+        run: |
+          set +e
+          cd run
+          run_one() {
+            region="$1"; label="$2"
+            rm -rf home; mkdir -p home
+            export HOME="$PWD/home"
+            export BF_CONFIG_HOME="$PWD/home"
+            export BF_CORE_NAME="libpsiphon.so"
+            export BF_CORES=2
+            export BF_INJECT_TYPE=2
+            export BF_WHITELIST="akamai.net"
+            export BF_FRONT="125.235.36.177"
+            export BF_BOLTDB="$PWD/seed.boltdb"
+            export BF_REGION="$region"
+            unset BF_SERVERLIST   # boltdb only, no -serverList
+            echo "===== [$label] region='${region:-auto}' boltdb-seeded, 120s ====="
+            timeout 120 ./libbrainfuck > "bolt_$label.log" 2>&1
+            if grep -aq "Connected" "bolt_$label.log"; then
+              echo "RESULT[$label]=CONNECTED (boltdb servers work with region='${region:-auto}')"
+            else
+              echo "RESULT[$label]=NOT_CONNECTED"
+            fi
+            echo "--- dialed bug? ---"; grep -a "Connecting to 125.235.36.177" "bolt_$label.log" | head -3
+            echo "--- last 8 lines ---"; tail -8 "bolt_$label.log"
+          }
+          run_one "SG" sg
+          run_one ""   auto
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: boltdb-logs
+          path: run/bolt_*.log
+          if-no-files-found: warn
