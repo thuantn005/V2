@@ -50,13 +50,21 @@ jobs:
             out="bundle-$abi"
             mkdir -p "$out"
             # engine
-            ( cd engine && \
-              GOFLAGS=-mod=vendor CGO_ENABLED=1 GOOS=android GOARCH="$goarch" ${goarm:+GOARM=$goarm} \
-              CC="$TC/$cc" go build -trimpath -ldflags "-s -w" -o "$GITHUB_WORKSPACE/$out/brainfuck" . )
+            (
+              cd engine
+              export GOFLAGS=-mod=vendor CGO_ENABLED=1 GOOS=android GOARCH="$goarch"
+              export CC="$TC/$cc"
+              [ -n "$goarm" ] && export GOARM="$goarm"
+              go build -trimpath -ldflags "-s -w" -o "$GITHUB_WORKSPACE/$out/brainfuck" .
+            )
             # psiphon core
-            ( cd psi/ConsoleClient && \
-              CGO_ENABLED=1 GOOS=android GOARCH="$goarch" ${goarm:+GOARM=$goarm} \
-              CC="$TC/$cc" go build -trimpath -ldflags "-s -w" -o "$GITHUB_WORKSPACE/$out/psiphon-tunnel-core" . )
+            (
+              cd psi/ConsoleClient
+              export CGO_ENABLED=1 GOOS=android GOARCH="$goarch"
+              export CC="$TC/$cc"
+              [ -n "$goarm" ] && export GOARM="$goarm"
+              go build -trimpath -ldflags "-s -w" -o "$GITHUB_WORKSPACE/$out/psiphon-tunnel-core" .
+            )
             cp app/src/main/assets/server_list "$out/server_list"
             cp termux/run.sh "$out/run.sh"
             cp termux/README.txt "$out/README.txt"
