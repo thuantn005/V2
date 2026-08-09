@@ -1,0 +1,73 @@
+name: Test blank-bug engine
+
+# Verifies the new default: with NO bug host/IP entered (blank fields, no
+# BF_NOBUG), the engine builds no injection rules and Psiphon still establishes
+# a tunnel over open internet (the injector simply passes CONNECTs through).
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "**" ]
+    paths:
+      - '.github/workflows/test-blank.yml'
+
+env:
+  GO_VERSION: "1.22"
+  PSIPHON_REF: "v2.0.31"
+
+jobs:
+  test-blank:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build engine + psiphon (host)
+        run: |
+          set -e
+          mkdir -p run
+          ( cd engine && \
+            GOFLAGS=-mod=vendor CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+            go build -trimpath -ldflags "-s -w" -o "$GITHUB_WORKSPACE/run/libbrainfuck" . )
+          git clone --depth 1 --branch "${PSIPHON_REF}" \
+            https://github.com/Psiphon-Labs/psiphon-tunnel-core.git psi
+          ( cd psi/ConsoleClient && \
+            CGO_ENABLED=1 go build -trimpath -ldflags "-s -w" \
+            -o "$GITHUB_WORKSPACE/run/libpsiphon.so" . )
+          cp app/src/main/assets/server_list run/server_list
+
+      - name: Run engine with NO bug (blank fields) for 150s
+        run: |
+          set +e
+          cd run
+          mkdir -p home
+          export HOME="$PWD/home"
+          export BF_CONFIG_HOME="$PWD/home"
+          export BF_SERVERLIST="$PWD/server_list"
+          export BF_CORE_NAME="libpsiphon.so"
+          export BF_CORES=2
+          # No BF_WHITELIST / BF_FRONT (blank bug), no BF_NOBUG. Default state
+          # of the shipped app before the user types a bug.
+          echo "=== running blank-bug engine 150s ==="
+          timeout 150 ./libbrainfuck > blank.log 2>&1
+          echo "--- injector dial lines (should be NONE / passthrough) ---"
+          grep -a "Connecting to" blank.log | head -5
+          if grep -aq "Connected" blank.log; then
+            echo "RESULT=CONNECTED (blank-bug app connects via plain Psiphon)"
+          else
+            echo "RESULT=NOT_CONNECTED"
+          fi
+          echo "--- last 20 lines ---"; tail -20 blank.log
+
+      - name: Upload log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blank-log
+          path: run/blank.log
+          if-no-files-found: warn
