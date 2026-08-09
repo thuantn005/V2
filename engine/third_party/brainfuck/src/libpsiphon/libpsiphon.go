@@ -61,18 +61,21 @@ type KuotaData struct {
 
 type Data struct {
 	MigrateDataStoreDirectory string
-	UpstreamProxyURL          string
-	LocalSocksProxyPort       int
-	SponsorId                 string
-	PropagationChannelId      string
-	EmitBytesTransferred      bool
-	EmitDiagnosticNotices     bool
-	DisableLocalHTTPProxy     bool
-	EgressRegion              string
-	TunnelPoolSize            int
-	ConnectionWorkerPoolSize  int
-	LimitTunnelProtocols      []string
-	Authorizations            []string
+	// omitempty: an empty UpstreamProxyURL must be OMITTED, not sent as "",
+	// otherwise Psiphon treats it as a configured (empty) proxy and every dial
+	// fails. Same for the other optional fields in no-bug mode.
+	UpstreamProxyURL         string `json:",omitempty"`
+	LocalSocksProxyPort      int
+	SponsorId                string
+	PropagationChannelId     string
+	EmitBytesTransferred     bool
+	EmitDiagnosticNotices    bool
+	DisableLocalHTTPProxy    bool
+	EgressRegion             string   `json:",omitempty"`
+	TunnelPoolSize           int
+	ConnectionWorkerPoolSize int
+	LimitTunnelProtocols     []string `json:",omitempty"`
+	Authorizations           []string `json:",omitempty"`
 }
 
 type Psiphon struct {
