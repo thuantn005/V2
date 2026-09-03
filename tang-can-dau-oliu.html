@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>30 Ngày Tăng Cân Cùng Dầu Oliu</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg:#2B3420;
+    --bg-alt:#38432A;
+    --bg-card:#333d25;
+    --gold:#C9A227;
+    --gold-light:#E7C766;
+    --cream:#F2ECD8;
+    --cream-dim:#C9C4AC;
+    --clay:#9C6B3E;
+    --line: rgba(242,236,216,0.14);
+    --good:#8BAA5C;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--cream);
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    min-height:100vh;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .app{
+    max-width:480px;
+    margin:0 auto;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+    padding-bottom:78px;
+  }
+
+  /* Top bar */
+  .topbar{
+    padding:28px 20px 20px;
+    display:flex;
+    align-items:center;
+    gap:16px;
+    border-bottom:1px solid var(--line);
+  }
+  .ring{
+    position:relative;
+    width:56px;height:56px;flex-shrink:0;
+  }
+  .ring svg{transform:rotate(-90deg);}
+  .ring circle{fill:none;stroke-width:5;}
+  .ring .track{stroke:var(--line);}
+  .ring .prog{stroke:var(--gold);stroke-linecap:round;transition:stroke-dashoffset .4s ease;}
+  .ring .num{
+    position:absolute;inset:0;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Fraunces',serif;font-size:15px;font-weight:600;
+  }
+  .topbar h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:19px;
+    line-height:1.25;
+    margin:0;
+  }
+  .topbar p{
+    margin:2px 0 0;
+    font-size:12.5px;
+    color:var(--cream-dim);
+  }
+
+  /* Tabs content */
+  .view{padding:22px 20px 20px; display:none;}
+  .view.active{display:block;}
+
+  /* Hero on plan tab */
+  .hero{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    margin-bottom:22px;
+  }
+  .hero .big{
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:48px;
+    line-height:0.9;
+    color:var(--gold-light);
+  }
+  .hero .big span{font-size:20px;color:var(--cream-dim);font-weight:400;}
+  .hero-label{font-size:12.5px;color:var(--cream-dim);text-align:right;max-width:130px;line-height:1.4;}
+
+  .daynav{
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding-bottom:14px;
+    margin-bottom:14px;
+    border-bottom:1px solid var(--line);
+    scrollbar-width:none;
+  }
+  .daynav::-webkit-scrollbar{display:none;}
+  .daypill{
+    flex-shrink:0;
+    width:38px;height:38px;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;
+    border:1px solid var(--line);
+    color:var(--cream-dim);
+    cursor:pointer;
+    background:transparent;
+  }
+  .daypill.done{background:var(--good);border-color:var(--good);color:#1e2414;font-weight:600;}
+  .daypill.current{border-color:var(--gold);color:var(--gold-light);font-weight:700;}
+
+  .daycard{
+    background:var(--bg-card);
+    border:1px solid var(--line);
+    padding:20px;
+  }
+  .daycard .tag{
+    font-size:11.5px;
+    color:var(--gold);
+    margin-bottom:6px;
+  }
+  .daycard h2{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:20px;
+    margin:0 0 16px;
+  }
+  .task{
+    display:flex;
+    gap:12px;
+    align-items:flex-start;
+    padding:12px 0;
+    border-top:1px solid var(--line);
+  }
+  .task:first-of-type{border-top:none;}
+  .task input[type=checkbox]{
+    appearance:none;
+    width:20px;height:20px;
+    border:1.5px solid var(--cream-dim);
+    border-radius:5px;
+    flex-shrink:0;
+    margin-top:1px;
+    cursor:pointer;
+    position:relative;
+    background:transparent;
+  }
+  .task input[type=checkbox]:checked{
+    background:var(--gold);
+    border-color:var(--gold);
+  }
+  .task input[type=checkbox]:checked::after{
+    content:'';
+    position:absolute;
+    left:6px;top:2px;
+    width:5px;height:10px;
+    border:solid #26301a;
+    border-width:0 2px 2px 0;
+    transform:rotate(45deg);
+  }
+  .task label{font-size:14.5px;line-height:1.5;color:var(--cream);}
+  .task.done label{color:var(--cream-dim);text-decoration:line-through;}
+  .task small{display:block;color:var(--cream-dim);font-size:12px;margin-top:3px;}
+
+  /* Weight log */
+  .field-row{display:flex;gap:10px;margin-bottom:18px;}
+  .field-row input{
+    flex:1;
+    background:var(--bg-card);
+    border:1px solid var(--line);
+    color:var(--cream);
+    padding:12px 14px;
+    font-size:15px;
+    font-family:'Inter',sans-serif;
+  }
+  .field-row input:focus{outline:none;border-color:var(--gold);}
+  .btn{
+    background:var(--gold);
+    color:#26301a;
+    border:none;
+    padding:12px 18px;
+    font-weight:600;
+    font-size:14px;
+    cursor:pointer;
+  }
+  .btn:active{background:var(--gold-light);}
+  .btn-ghost{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--cream-dim);
+  }
+
+  .stat-row{display:flex;gap:10px;margin-bottom:20px;}
+  .stat{
+    flex:1;
+    background:var(--bg-card);
+    border:1px solid var(--line);
+    padding:14px 16px;
+  }
+  .stat .v{font-family:'Fraunces',serif;font-size:22px;font-weight:600;color:var(--gold-light);}
+  .stat .l{font-size:11.5px;color:var(--cream-dim);margin-top:2px;}
+
+  canvas{width:100%;display:block;}
+
+  .loglist{margin-top:18px;}
+  .logrow{
+    display:flex;justify-content:space-between;
+    padding:11px 0;
+    border-top:1px solid var(--line);
+    font-size:13.5px;
+  }
+  .logrow span:first-child{color:var(--cream-dim);}
+
+  /* Tips */
+  .tip{
+    background:var(--bg-card);
+    border-left:3px solid var(--clay);
+    padding:14px 16px;
+    margin-bottom:12px;
+    font-size:14px;
+    line-height:1.55;
+  }
+  .tip b{color:var(--gold-light);font-family:'Fraunces',serif;font-weight:600;display:block;margin-bottom:4px;font-size:14.5px;}
+  .note{
+    font-size:12px;
+    color:var(--cream-dim);
+    line-height:1.6;
+    margin-top:18px;
+    border-top:1px solid var(--line);
+    padding-top:14px;
+  }
+
+  /* Bottom nav */
+  .bottomnav{
+    position:fixed;
+    bottom:0;left:0;right:0;
+    max-width:480px;
+    margin:0 auto;
+    background:var(--bg-alt);
+    border-top:1px solid var(--line);
+    display:flex;
+  }
+  .navbtn{
+    flex:1;
+    padding:14px 0 10px;
+    text-align:center;
+    background:none;
+    border:none;
+    color:var(--cream-dim);
+    font-size:11px;
+    font-family:'Inter',sans-serif;
+    cursor:pointer;
+  }
+  .navbtn .ic{display:block;font-size:19px;margin-bottom:3px;}
+  .navbtn.active{color:var(--gold-light);}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div class="ring">
+      <svg width="56" height="56" viewBox="0 0 56 56">
+        <circle class="track" cx="28" cy="28" r="24"></circle>
+        <circle class="prog" id="ringProg" cx="28" cy="28" r="24" stroke-dasharray="150.8" stroke-dashoffset="150.8"></circle>
+      </svg>
+      <div class="num" id="ringNum">0%</div>
+    </div>
+    <div>
+      <h1>30 Ngày Cùng Dầu Oliu</h1>
+      <p id="topSub">Hành trình tăng cân lành mạnh — Ngày 1</p>
+    </div>
+  </div>
+
+  <!-- PLAN VIEW -->
+  <div class="view active" id="view-plan">
+    <div class="hero">
+      <div class="big" id="heroDay">1<span>/30</span></div>
+      <div class="hero-label">2 muỗng canh dầu oliu nguyên chất mỗi ngày, kết hợp bữa ăn giàu năng lượng</div>
+    </div>
+    <div class="daynav" id="daynav"></div>
+    <div class="daycard">
+      <div class="tag" id="dayTag">GIAI ĐOẠN KHỞI ĐỘNG</div>
+      <h2 id="dayTitle">Bắt đầu nhẹ nhàng</h2>
+      <div id="taskList"></div>
+    </div>
+  </div>
+
+  <!-- LOG VIEW -->
+  <div class="view" id="view-log">
+    <div class="stat-row">
+      <div class="stat"><div class="v" id="statStart">–</div><div class="l">Cân nặng ban đầu (kg)</div></div>
+      <div class="stat"><div class="v" id="statNow">–</div><div class="l">Mới nhất (kg)</div></div>
+      <div class="stat"><div class="v" id="statDelta">–</div><div class="l">Thay đổi</div></div>
+    </div>
+    <canvas id="chart" height="160"></canvas>
+    <div class="field-row" style="margin-top:20px;">
+      <input type="number" step="0.1" id="weightInput" placeholder="Nhập cân nặng hôm nay (kg)">
+      <button class="btn" id="saveWeight">Lưu</button>
+    </div>
+    <div class="loglist" id="loglist"></div>
+  </div>
+
+  <!-- TIPS VIEW -->
+  <div class="view" id="view-tips">
+    <div class="tip"><b>Liều lượng dầu oliu</b>Bắt đầu với 1 muỗng canh (15ml)/ngày trong 3 ngày đầu, sau đó tăng dần lên 2 muỗng canh (30ml)/ngày. Dùng dầu oliu nguyên chất (extra virgin), tránh đun ở nhiệt độ quá cao để giữ dưỡng chất.</div>
+    <div class="tip"><b>Cách dùng thông minh</b>Rưới trực tiếp lên salad, rau luộc, súp, hoặc trộn vào cơm/cháo. Có thể thêm vào sinh tố cùng chuối, bơ, sữa để tăng calo mà không gây ngán.</div>
+    <div class="tip"><b>Kết hợp bữa ăn</b>Dầu oliu tăng calo tốt nhất khi đi cùng thực phẩm giàu đạm và tinh bột tốt: trứng, cá, thịt nạc, các loại hạt, yến mạch, khoai, gạo lứt.</div>
+    <div class="tip"><b>Ăn đủ bữa, đủ giấc</b>Tăng cân bền vững cần ăn đều 3 bữa chính + 1-2 bữa phụ, ngủ đủ 7-8 tiếng, và vận động nhẹ (đi bộ, tạ nhẹ) để cân nặng tăng lên là cơ chứ không chỉ mỡ.</div>
+    <div class="tip"><b>Theo dõi cơ thể</b>Nếu đầy bụng, khó tiêu hoặc có bệnh lý về gan mật, giảm liều dầu oliu và tham khảo ý kiến bác sĩ hoặc chuyên gia dinh dưỡng trước khi tiếp tục.</div>
+    <div class="note">Đây là công cụ hỗ trợ theo dõi thói quen ăn uống, không thay thế tư vấn y tế. Nếu bạn có bệnh nền hoặc mục tiêu tăng cân do vấn đề sức khỏe, hãy trao đổi với bác sĩ.</div>
+  </div>
+
+  <div class="bottomnav">
+    <button class="navbtn active" data-view="plan"><span class="ic">◐</span>Kế hoạch</button>
+    <button class="navbtn" data-view="log"><span class="ic">▲</span>Nhật ký</button>
+    <button class="navbtn" data-view="tips"><span class="ic">✦</span>Mẹo</button>
+  </div>
+</div>
+
+<script>
+const TOTAL_DAYS = 30;
+let currentDay = 1;
+let dayStatus = {}; // {1: true/false}
+
+const MEALS = [
+  "Trứng chiên dầu oliu + bánh mì nguyên cám",
+  "Salad rau củ trộn dầu oliu + ức gà",
+  "Cháo yến mạch, thêm 1 thìa dầu oliu + chuối",
+  "Cá hồi áp chảo dầu oliu + khoai lang",
+  "Cơm gạo lứt, rau luộc rưới dầu oliu + đậu phụ",
+  "Sinh tố bơ, sữa, mật ong, 1 thìa dầu oliu",
+  "Súp bí đỏ rưới dầu oliu + bánh mì"
+];
+
+const PHASES = [
+  {range:[1,7], tag:"GIAI ĐOẠN KHỞI ĐỘNG", title:"Làm quen với dầu oliu"},
+  {range:[8,20], tag:"GIAI ĐOẠN TĂNG TỐC", title:"Duy trì đều đặn, tăng khẩu phần"},
+  {range:[21,30], tag:"GIAI ĐOẠN BỨT PHÁ", title:"Ổn định thói quen, theo dõi kết quả"}
+];
+
+function phaseFor(day){
+  return PHASES.find(p=>day>=p.range[0] && day<=p.range[1]) || PHASES[0];
+}
+
+function tasksFor(day){
+  const dose = day<=3 ? "1 muỗng canh (15ml)" : "2 muỗng canh (30ml)";
+  const meal = MEALS[(day-1) % MEALS.length];
+  return [
+    {id:'oil', text:`Dùng ${dose} dầu oliu nguyên chất trong ngày`},
+    {id:'meal', text:`Bữa gợi ý: ${meal}`},
+    {id:'weigh', text:`Cân nặng buổi sáng, ghi vào Nhật ký`},
+    {id:'water', text:`Uống đủ 1.5–2 lít nước, ngủ đủ giấc`}
+  ];
+}
+
+function renderDayNav(){
+  const nav = document.getElementById('daynav');
+  nav.innerHTML = '';
+  for(let d=1; d<=TOTAL_DAYS; d++){
+    const pill = document.createElement('div');
+    pill.className = 'daypill' + (dayStatus[d] ? ' done' : '') + (d===currentDay ? ' current' : '');
+    pill.textContent = d;
+    pill.onclick = () => { currentDay = d; renderPlan(); };
+    nav.appendChild(pill);
+  }
+}
+
+function updateRing(){
+  const doneCount = Object.values(dayStatus).filter(Boolean).length;
+  const pct = Math.round((doneCount/TOTAL_DAYS)*100);
+  const c = document.getElementById('ringProg');
+  const circumference = 150.8;
+  c.style.strokeDashoffset = circumference - (circumference*pct/100);
+  document.getElementById('ringNum').textContent = pct+'%';
+  document.getElementById('topSub').textContent = `Hành trình tăng cân lành mạnh — Đã hoàn thành ${doneCount}/30 ngày`;
+}
+
+async function renderPlan(){
+  document.getElementById('heroDay').innerHTML = currentDay + '<span>/30</span>';
+  const phase = phaseFor(currentDay);
+  document.getElementById('dayTag').textContent = phase.tag;
+  document.getElementById('dayTitle').textContent = `Ngày ${currentDay} — ${phase.title}`;
+
+  let checks = {};
+  try{
+    const res = await window.storage.get('daychecks:'+currentDay);
+    if(res && res.value) checks = JSON.parse(res.value);
+  }catch(e){}
+
+  const list = document.getElementById('taskList');
+  list.innerHTML = '';
+  const tasks = tasksFor(currentDay);
+  tasks.forEach(t=>{
+    const row = document.createElement('div');
+    row.className = 'task' + (checks[t.id] ? ' done' : '');
+    row.innerHTML = `<input type="checkbox" id="t-${t.id}" ${checks[t.id]?'checked':''}><label for="t-${t.id}">${t.text}</label>`;
+    const cb = row.querySelector('input');
+    cb.addEventListener('change', async ()=>{
+      checks[t.id] = cb.checked;
+      row.classList.toggle('done', cb.checked);
+      try{ await window.storage.set('daychecks:'+currentDay, JSON.stringify(checks)); }catch(e){}
+      const allDone = tasks.every(tt=>checks[tt.id]);
+      dayStatus[currentDay] = allDone;
+      try{ await window.storage.set('daystatus', JSON.stringify(dayStatus)); }catch(e){}
+      renderDayNav();
+      updateRing();
+    });
+    list.appendChild(row);
+  });
+  renderDayNav();
+}
+
+// ---- Weight log ----
+async function loadLog(){
+  let log = [];
+  try{
+    const res = await window.storage.get('weightlog');
+    if(res && res.value) log = JSON.parse(res.value);
+  }catch(e){}
+  return log;
+}
+async function saveLog(log){
+  try{ await window.storage.set('weightlog', JSON.stringify(log)); }catch(e){}
+}
+
+function drawChart(log){
+  const canvas = document.getElementById('chart');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.clientWidth || 400;
+  const h = 160;
+  canvas.width = w * devicePixelRatio;
+  canvas.height = h * devicePixelRatio;
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  ctx.clearRect(0,0,w,h);
+
+  if(log.length === 0){
+    ctx.fillStyle = 'rgba(242,236,216,0.4)';
+    ctx.font = '13px Inter, sans-serif';
+    ctx.fillText('Chưa có dữ liệu cân nặng', 10, h/2);
+    return;
+  }
+  const weights = log.map(l=>l.weight);
+  const min = Math.min(...weights) - 0.5;
+  const max = Math.max(...weights) + 0.5;
+  const pad = 12;
+  const stepX = (w - pad*2) / Math.max(log.length-1, 1);
+
+  ctx.strokeStyle = 'rgba(242,236,216,0.14)';
+  ctx.lineWidth = 1;
+  for(let i=0;i<=3;i++){
+    const y = pad + (h-pad*2)*(i/3);
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke();
+  }
+
+  ctx.beginPath();
+  log.forEach((pt,i)=>{
+    const x = pad + i*stepX;
+    const y = pad + (h-pad*2) * (1 - (pt.weight-min)/(max-min));
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle = '#C9A227';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  log.forEach((pt,i)=>{
+    const x = pad + i*stepX;
+    const y = pad + (h-pad*2) * (1 - (pt.weight-min)/(max-min));
+    ctx.beginPath();
+    ctx.arc(x,y,3.5,0,Math.PI*2);
+    ctx.fillStyle = '#E7C766';
+    ctx.fill();
+  });
+}
+
+async function renderLog(){
+  const log = await loadLog();
+  drawChart(log);
+  document.getElementById('statStart').textContent = log.length ? log[0].weight : '–';
+  document.getElementById('statNow').textContent = log.length ? log[log.length-1].weight : '–';
+  const delta = log.length>1 ? (log[log.length-1].weight - log[0].weight) : 0;
+  document.getElementById('statDelta').textContent = log.length>1 ? (delta>=0?'+':'')+delta.toFixed(1) : '–';
+
+  const list = document.getElementById('loglist');
+  list.innerHTML = '';
+  log.slice().reverse().forEach(entry=>{
+    const row = document.createElement('div');
+    row.className = 'logrow';
+    row.innerHTML = `<span>${entry.date}</span><span>${entry.weight} kg</span>`;
+    list.appendChild(row);
+  });
+}
+
+document.getElementById('saveWeight').addEventListener('click', async ()=>{
+  const input = document.getElementById('weightInput');
+  const val = parseFloat(input.value);
+  if(!val || val<=0) return;
+  const log = await loadLog();
+  const today = new Date().toLocaleDateString('vi-VN', {day:'2-digit',month:'2-digit'});
+  log.push({date: today, weight: val});
+  await saveLog(log);
+  input.value = '';
+  renderLog();
+});
+
+// ---- Nav ----
+document.querySelectorAll('.navbtn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.navbtn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('view-'+btn.dataset.view).classList.add('active');
+    if(btn.dataset.view==='log') renderLog();
+  });
+});
+
+// ---- Init ----
+(async function init(){
+  try{
+    const res = await window.storage.get('daystatus');
+    if(res && res.value) dayStatus = JSON.parse(res.value);
+  }catch(e){}
+  const doneKeys = Object.keys(dayStatus).filter(k=>dayStatus[k]).map(Number);
+  currentDay = doneKeys.length ? Math.min(Math.max(...doneKeys)+1, TOTAL_DAYS) : 1;
+  await renderPlan();
+  updateRing();
+})();
+</script>
+</body>
+</html>
